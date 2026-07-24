@@ -4,11 +4,11 @@
 
 PROJECT = synvoice
 
-UCSRC = osc.c adsr_envelope.c basic_oscillator.c moog_filter.c envelope_stage.c synth_random.c
+UCSRC = osc.c adsr_envelope.c ../common/src/basic_oscillator.c moog_filter.c envelope_stage.c ../common/src/synth_random.c
 
 UCXXSRC = 
 
-UINCDIR =
+UINCDIR = ../common/src
 
 UDEFS =
 

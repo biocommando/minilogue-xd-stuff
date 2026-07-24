@@ -4,11 +4,11 @@
 
 PROJECT = oscstack
 
-UCSRC = osc.c  basic_oscillator.c synth_random.c wavetable.c
+UCSRC = osc.c ../common/src/basic_oscillator.c ../common/src/synth_random.c wavetable.c
 
 UCXXSRC = 
 
-UINCDIR =
+UINCDIR = ../common/src
 
 UDEFS =
 
