@@ -1,0 +1,50 @@
+{
+    "header": {
+        "platform": "minilogue-xd",
+        "module": "osc",
+        "api": "1.1-0",
+        "dev_id": 0,
+        "prg_id": 0,
+        "version": "1.0-0",
+        "name": "synvoice",
+        "num_param": 6,
+        "params": [
+            [
+                "Attack",
+                0,
+                100,
+                ""
+            ],
+            [
+                "Decay",
+                0,
+                100,
+                ""
+            ],
+            [
+                "Sustain",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Release",
+                0,
+                100,
+                ""
+            ],
+            [
+                "Waveform",
+                0,
+                3,
+                ""
+            ],
+            [
+                "Sub mix",
+                0,
+                100,
+                "%"
+            ]
+        ]
+    }
+}
