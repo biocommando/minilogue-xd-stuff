@@ -4,11 +4,11 @@
 
 PROJECT = FuzzOfDoom
 
-UCSRC = main.c flt.c
+UCSRC = main.c ../common/src/flt.c
 
 UCXXSRC =
 
-UINCDIR =
+UINCDIR = ../common/src
 
 UDEFS =
 

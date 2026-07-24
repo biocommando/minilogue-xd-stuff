@@ -4,11 +4,11 @@
 
 PROJECT = TR707
 
-UCSRC = osc.c combined_waveforms.c flt.c
+UCSRC = osc.c combined_waveforms.c ../common/src/flt.c
 
 UCXXSRC = 
 
-UINCDIR =
+UINCDIR = ../common/src
 
 UDEFS =
 

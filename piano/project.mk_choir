@@ -4,11 +4,11 @@
 
 PROJECT = choir
 
-UCSRC = generated_dataoscsrc.c osc.c flt.c
+UCSRC = generated_dataoscsrc.c osc.c  ../common/src/flt.c
 
 UCXXSRC =
 
-UINCDIR =
+UINCDIR = ../common/src
 
 UDEFS =
 
