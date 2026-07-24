@@ -1,0 +1,50 @@
+{
+    "header": {
+        "platform": "minilogue-xd",
+        "module": "osc",
+        "api": "1.1-0",
+        "dev_id": 0,
+        "prg_id": 0,
+        "version": "1.0-0",
+        "name": "oscstack",
+        "num_param": 6,
+        "params": [
+            [
+                "Waveform",
+                0,
+                4,
+                ""
+            ],
+            [
+                "Base atten",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "-2 oct mix",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "-1 oct mix",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "+1 oct mix",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "+2 oct mix",
+                0,
+                100,
+                "%"
+            ]
+        ]
+    }
+}
