@@ -1,0 +1,46 @@
+## Korg logue SDK: 2 OP FM Vector Synth User Oscillator
+A 2 operator FM vector synth user oscillator for the **Korg Minilogue XD** multi-engine, built using the official C/C++ **logue-sdk**.
+
+## Building / binary distribution
+A compiled and tested binary comes with this repository. To build, use the **Minilogue SDK**. To use the same workflow as I, use the legacy building method and place this repository right under `logue-sdk/platform/minilogue-xd`.
+
+## Architecture
+The oscillator has 2 identical FM synth engines with the following operator architecture:
+```
+operator 2 --> operator 1 -> output
+           /
+envelope -/
+```
+
+So, `operator 2` modulates `operator 1` with a configurable modulation amount. The modulation amount can be modulated using a simple exponential envelope.
+
+The shape parameter changes the synth engine mix and shift+shape overtone content for operator waveform.
+
+You can modify the following parameters (see below for more details): operator 1 / 2 frequency ratio, modulation amount, modulation envelope length.
+
+### Parameters
+
+#### Shape parameters
+- Shape:
+    * Synth engine 1 and 2 mix. Minimum value = only play engine 1, maximum value = only play engine 2. 
+- Shift + Shape:
+    * Harmonic content for operator waveform. At minimum, uses pure sine.
+
+#### User parameters
+Synth engine 1 is edited using parameter 1..3 and synth engine 2 using identical parameters 4..6. 
+
+- 1, 4: `S1 Ratio`, `S2 Ratio`:
+    * Frequency ratio between operators 1 and 2, divided by 8. E.g. 16 = operator 2 frequency is 2 times the base frequency. 
+- 2, 5: `S1 ModAmt`, `S2 ModAmt`:
+    * Amount of frequency modulation from operator 2 to operator 1.
+    * 0%: Default amount. Use 1% for no modulation.
+- 3, 6: `S1 Env`, `S2 Env` -100...100:
+    * Envelope length that modulates the modulation amount.
+    * 0 = no envelope modulation
+    * over 0 = decay envelope
+    * below 0 = attack+decay envelope
+    * Maximum envelope time ~6 seconds.
+
+## License
+Original code MIT licensed (see LICENSE.md). Korg code BSD 3-Clause Licensed, license headers retained in relevant code files.
+

@@ -1,0 +1,50 @@
+{
+    "header": {
+        "platform": "minilogue-xd",
+        "module": "osc",
+        "api": "1.1-0",
+        "dev_id": 0,
+        "prg_id": 0,
+        "version": "1.0-0",
+        "name": "fm2x2",
+        "num_param": 6,
+        "params": [
+            [
+                "S1 Ratio",
+                0,
+                100,
+                ""
+            ],
+            [
+                "S1 ModAmt",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "S1 Env",
+                -100,
+                100,
+                "%"
+            ],
+            [
+                "S2 Ratio",
+                0,
+                100,
+                ""
+            ],
+            [
+                "S2 ModAmt",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "S2 Env",
+                -100,
+                100,
+                "%"
+            ]
+        ]
+    }
+}
