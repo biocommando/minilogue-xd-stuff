@@ -1,0 +1,50 @@
+PROJ_BASE_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[-1]}")/..")
+
+function check_valid_json {
+    python3 -m json.tool $1 >/dev/null 2>&1
+}
+
+function list_proj {
+    find "$PROJ_BASE_PATH"/ -maxdepth 1 -type d -regex ".*/[a-z][^/]*" | grep -o "[a-z0-9-]*$" | grep -v common
+}
+
+function make_all {
+    for p in $(list_proj)
+    do
+        cd $p
+        make
+        cd ..
+    done
+}
+
+function clean_make_install_all {
+    for p in $(list_proj)
+    do
+        cd "$PROJ_BASE_PATH/$p"
+        make clean
+        make
+        if [ "$?" != "0" ]
+        then
+          echo "Make failed for project $p"
+          cd -
+          break
+        fi
+        check_valid_json manifest.json
+        if [ "$?" != "0" ]
+        then
+          echo "Manifest JSON invalid for project $p"
+          cd -
+          break
+        fi
+        make install
+        cd -
+    done
+}
+
+function to_shared {
+    name=$(python3 -c "import json;print(json.load(open('$PROJ_BASE_PATH/$1/manifest.json'))['header']['name'])")
+    path="$PROJ_BASE_PATH/$1/$name.mnlgxdunit"
+    cp "$path" /mnt/shared/
+    echo copied $path to /mnt/shared/
+}
+
