@@ -167,7 +167,7 @@ sample_data: 8bitdump
 	tools/8bit_dump $(SAMPLE_GEN_PARAMS) -o generated_dataoscsrc.c
 
 8bitdump:
-	$(CCNATIVE) tools/8bit_dump.c tools/args.c tools/wav_handler/wav_handler.c -o tools/8bit_dump
+	$(CCNATIVE) -I../common tools/8bit_dump.c tools/args.c ../common/wav_handler/wav_handler.c -o tools/8bit_dump
 
 prepare_manifest:
 	cp manifest.json.in $(MANIFEST)
