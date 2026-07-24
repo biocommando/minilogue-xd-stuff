@@ -1,0 +1,50 @@
+{
+    "header": {
+        "platform": "minilogue-xd",
+        "module": "osc",
+        "api": "1.1-0",
+        "dev_id": 0,
+        "prg_id": 0,
+        "version": "1.0-0",
+        "name": "TR707",
+        "num_param": 6,
+        "params": [
+            [
+                "Gate mode",
+                0,
+                1,
+                ""
+            ],
+            [
+                "Kick cut",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Snare cut",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Hats cut",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Crash cut",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Perc cut",
+                0,
+                100,
+                "%"
+            ]
+        ]
+    }
+}
