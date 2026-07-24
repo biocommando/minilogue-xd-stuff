@@ -1,0 +1,19 @@
+# #############################################################################
+# Project Customization
+# #############################################################################
+
+PROJECT = guitar
+
+UCSRC = generated_dataoscsrc.c osc.c flt.c
+
+UCXXSRC =
+
+UINCDIR =
+
+UDEFS =
+
+ULIB = 
+
+ULIBDIR =
+
+SAMPLE_GEN_PARAMS = -i sampledata/guitar.wav
