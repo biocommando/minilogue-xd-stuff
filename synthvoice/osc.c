@@ -8,11 +8,17 @@ static AdsrEnvelope env;
 static MicrotrackerMoog filter;
 static BasicOscillator osc, sub;
 
-static enum OscType waveform = OSC_TRIANGLE;
+static enum OscType waveform = OSC_TRIANGLE, wf_sqr = OSC_SQUARE;
+static enum OscType *sub_waveform = NULL;
 static float sub_mix = 0, main_mix = 1;
 
 #define WT_LEN 128
 #define WT_NUM 4
+#define WT_TYPE_NOISE 0
+#define WT_TYPE_NOISE_SAW 1
+#define WT_TYPE_PULSE 2
+#define WT_TYPE_THIN_PULSE 3
+
 static float wavetables[WT_NUM][WT_LEN];
 
 void OSC_INIT(uint32_t platform, uint32_t api)
@@ -28,18 +34,19 @@ void OSC_INIT(uint32_t platform, uint32_t api)
       for (int i = 0; i < WT_LEN; i++)
       {
           float y;
-          if (wi == 0)
+          if (wi == WT_TYPE_NOISE)
               y = 2 * ((synth_random()&0xFFFF)/(float)0xFFFF - 0.5);
-          else if (wi == 1)
+          else if (wi == WT_TYPE_NOISE_SAW)
               y = 2 * ((i / (float)WT_LEN - 0.5) + (synth_random()&0xFFFF)/(float)0xFFFF - 0.5);
-          else if (wi == 2)
+          else if (wi == WT_TYPE_PULSE)
               y = i > 10 ? 1 : -1;
-          else if (wi == 3)
+          else if (wi == WT_TYPE_THIN_PULSE)
               y = i > 5 ? 1 : -1;
 
           wavetables[wi][i] = y;
       }
   }
+  sub_waveform = &waveform;
 }
 
 static inline void update_inc(const user_osc_param_t *const params)
@@ -70,7 +77,7 @@ void OSC_CYCLE(const user_osc_param_t *const params,
     BasicOscillator_calculateNext(&osc);
     BasicOscillator_calculateNext(&sub);
     float out = BasicOscillator_getValue(&osc, waveform) * main_mix;
-    out += BasicOscillator_getValue(&sub, waveform) * sub_mix;
+    out += BasicOscillator_getValue(&sub, *sub_waveform) * sub_mix;
     out = MicrotrackerMoog_calculate(&filter, out);
 
     *(y++) = f32_to_q31(out);
@@ -111,17 +118,41 @@ void OSC_PARAM(uint16_t index, uint16_t value)
     else if (value == 1) waveform = OSC_SQUARE;
     else if (value == 2) waveform = OSC_TRIANGLE;
     else if (value == 3) waveform = OSC_SINE;
-    else if (value >= 4 && value <= 7)
+    else if (value >= 4)
     {
         waveform = OSC_WT;
-        float *wt = wavetables[value - 4];
+        int wt_index = WT_TYPE_NOISE;
+        float win = 1;
+        if (value == 4)
+            wt_index = WT_TYPE_PULSE;
+        else if (value == 5)
+            wt_index = WT_TYPE_THIN_PULSE;
+        else if (value == 6)
+            wt_index = WT_TYPE_NOISE_SAW;
+        else
+        {
+            win = (value - 6) * 0.25;
+            if (win > 1) win = 1;
+        }
+
+        float *wt = wavetables[wt_index];
         BasicOscillator_setWavetable(&osc, wt, WT_LEN);
-        BasicOscillator_setWaveTableParams(&osc, 0, 1);
+        BasicOscillator_setWaveTableParams(&osc, 0, win);
         BasicOscillator_setWavetable(&sub, wt, WT_LEN);
-        BasicOscillator_setWaveTableParams(&sub, 0, 1);
+        BasicOscillator_setWaveTableParams(&sub, 0, win);
     }
     break;
   case k_user_osc_param_id6:
+    if (value > 100)
+    {
+        sub_waveform = &wf_sqr;
+        value -= 100;
+    }
+    else
+    {
+        sub_waveform = &waveform;
+        value = 100 - value;
+    }
     sub_mix = value / 100.0;
     main_mix = 1 - sub_mix;
     break;

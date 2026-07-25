@@ -31,11 +31,17 @@ Uses library code from my other projects.
     * 2 = square
     * 3 = triangle
     * 4 = sine (using 256 point wavetable with no interpolation, so it's kind of rough)
-    * 5 = noise wavetable
-    * 6 = sawtooth + noise wavetable
-    * 7 = pulse wavetable
-    * 8 = thin pulse wavetable
-- 6: Sub oscillator mix (0% = only main oscillator, 100% = only sub oscillator)
+    * 5 = pulse wavetable
+    * 6 = thin pulse wavetable
+    * 7 = sawtooth + noise wavetable
+    * 8 = noise wavetable 25% length
+    * 9 = noise wavetable 50% length
+    * 10 = noise wavetable 75% length
+    * 11 = noise wavetable 100% length
+- 6: Sub oscillator mix
+	* -100 % = only sub oscillator (same waveform as main)
+	*    0 % = only main oscillator
+	* +100 % = only sub oscillator (square wave)
 
 ## License
 Original code MIT licensed (see LICENSE.md). Korg code BSD 3-Clause Licensed, license headers retained in relevant code files.
