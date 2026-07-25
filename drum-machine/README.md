@@ -39,7 +39,7 @@ The samples can be played back with different playback speeds (pitch) using diff
 - Shape:
     * Overdrive gain
 - Shift + Shape:
-    * Decay length
+    * "Humanization", random pitch variations applied on note on event
 
 #### User parameters
 - 1: Gate mode (stop on note release / play to end)
