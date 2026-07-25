@@ -5,7 +5,7 @@
         "api": "1.1-0",
         "dev_id": 0,
         "prg_id": 0,
-        "version": "1.0-0",
+        "version": "1.0-1",
         "name": "synvoice",
         "num_param": 6,
         "params": [
@@ -36,7 +36,7 @@
             [
                 "Waveform",
                 0,
-                3,
+                7,
                 ""
             ],
             [

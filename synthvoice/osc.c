@@ -2,13 +2,18 @@
 #include "basic_oscillator.h"
 #include "moog_filter.h"
 #include "userosc.h"
+#include "synth_random.h"
 
 static AdsrEnvelope env;
 static MicrotrackerMoog filter;
 static BasicOscillator osc, sub;
 
 static enum OscType waveform = OSC_TRIANGLE;
-static float sub_mix = 0;
+static float sub_mix = 0, main_mix = 1;
+
+#define WT_LEN 128
+#define WT_NUM 4
+static float wavetables[WT_NUM][WT_LEN];
 
 void OSC_INIT(uint32_t platform, uint32_t api)
 {
@@ -17,6 +22,24 @@ void OSC_INIT(uint32_t platform, uint32_t api)
   init_AdsrEnvelope(&env);
   init_MicrotrackerMoog(&filter, k_samplerate);
   init_BasicOscillator(&osc, k_samplerate);
+  init_BasicOscillator(&sub, k_samplerate);
+  for (int wi = 0; wi < WT_NUM; wi++)
+  {
+      for (int i = 0; i < WT_LEN; i++)
+      {
+          float y;
+          if (wi == 0)
+              y = 2 * ((synth_random()&0xFFFF)/(float)0xFFFF - 0.5);
+          else if (wi == 1)
+              y = 2 * ((i / (float)WT_LEN - 0.5) + (synth_random()&0xFFFF)/(float)0xFFFF - 0.5);
+          else if (wi == 2)
+              y = i > 10 ? 1 : -1;
+          else if (wi == 3)
+              y = i > 5 ? 1 : -1;
+
+          wavetables[wi][i] = y;
+      }
+  }
 }
 
 static inline void update_inc(const user_osc_param_t *const params)
@@ -46,7 +69,7 @@ void OSC_CYCLE(const user_osc_param_t *const params,
     MicrotrackerMoog_setModulation(&filter, mod);
     BasicOscillator_calculateNext(&osc);
     BasicOscillator_calculateNext(&sub);
-    float out = BasicOscillator_getValue(&osc, waveform);
+    float out = BasicOscillator_getValue(&osc, waveform) * main_mix;
     out += BasicOscillator_getValue(&sub, waveform) * sub_mix;
     out = MicrotrackerMoog_calculate(&filter, out);
 
@@ -88,9 +111,19 @@ void OSC_PARAM(uint16_t index, uint16_t value)
     else if (value == 1) waveform = OSC_SQUARE;
     else if (value == 2) waveform = OSC_TRIANGLE;
     else if (value == 3) waveform = OSC_SINE;
+    else if (value >= 4 && value <= 7)
+    {
+        waveform = OSC_WT;
+        float *wt = wavetables[value - 4];
+        BasicOscillator_setWavetable(&osc, wt, WT_LEN);
+        BasicOscillator_setWaveTableParams(&osc, 0, 1);
+        BasicOscillator_setWavetable(&sub, wt, WT_LEN);
+        BasicOscillator_setWaveTableParams(&sub, 0, 1);
+    }
     break;
   case k_user_osc_param_id6:
     sub_mix = value / 100.0;
+    main_mix = 1 - sub_mix;
     break;
   case k_user_osc_param_shape:
     MicrotrackerMoog_setCutoff(&filter, param_val_to_f32(value));
