@@ -1,0 +1,50 @@
+{
+    "header": {
+        "platform": "minilogue-xd",
+        "module": "osc",
+        "api": "1.1-0",
+        "dev_id": 0,
+        "prg_id": 0,
+        "version": "1.0-0",
+        "name": "multiwt",
+        "num_param": 6,
+        "params": [
+            [
+                "Position",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Order",
+                0,
+                19,
+                ""
+            ],
+            [
+                "LFO Int",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "LFO Freq",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "LFO Wave",
+                0,
+                3,
+                ""
+            ],
+            [
+				"Sticky",
+				0,
+				100,
+				""
+            ]
+        ]
+    }
+}
