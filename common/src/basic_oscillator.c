@@ -36,6 +36,7 @@ void BasicOscillator_setWaveTableParams(BasicOscillator* bo, float pos, float wi
 {
     bo->wtWindow = 2 + window * (bo->wt_size - 2);
     bo->wtPos = pos * (bo->wt_size - bo->wtWindow - 1);
+    if (bo->wtPos < 0) bo->wtPos = 0;
 }
 
 void BasicOscillator_setWavetable(BasicOscillator* this, float *wt, int size)
