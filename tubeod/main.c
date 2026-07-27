@@ -3,8 +3,8 @@
 
 #define SAMPLERATE 48000
 
-static float gain = 1;
-static float noise_gate_lev = 0.1;
+static float gain = 1, post_gain = 1;
+static float noise_gate_lev = 0.05;
 int next_frame_silent = 0;
 static AsymComprParams input_compr, output_compr;
 
@@ -66,7 +66,7 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn,
     {
         for (int ch = 0; ch < 2; ch++)
         {
-            float output = process_one_sample(*(x++));
+            float output = process_one_sample(*(x++)) * post_gain;
             if (fabs(output) > noise_gate_lev)
             {
                 next_frame_silent = 0;
@@ -83,10 +83,10 @@ void MODFX_PARAM(uint8_t index, int32_t value)
     const float v = q31_to_f32(value);
     if (index == k_user_modfx_param_time)
     {
-        gain = 0.1 + 3.9 * v;
+        gain = 0.01 + 3.99 * v * v;
     }
     else if (index == k_user_modfx_param_depth)
     {
-        noise_gate_lev = v;
+        post_gain = v * 0.95 + 0.05;
     }
 }
