@@ -1,8 +1,5 @@
 PROJ_BASE_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[-1]}")/..")
-
-function check_valid_json {
-    python3 -m json.tool $1 >/dev/null 2>&1
-}
+MANIFEST_TOOL=$PROJ_BASE_PATH/common/scripts/manifest_tool.py
 
 function uulist {
     find "$PROJ_BASE_PATH"/ -maxdepth 1 -type d -regex ".*/[a-z][^/]*" | grep -o "[a-z0-9-]*$" | grep -v common
@@ -11,17 +8,24 @@ function uulist {
 function uumake {
     cd "$PROJ_BASE_PATH/$1"
     make clean
+    make PRE_ALL
+    if [ "$?" != "0" ]
+    then
+      echo "<<$1>> Make PRE_ALL failed"
+      cd -
+      return 1
+    fi
+    $MANIFEST_TOOL --verify manifest.json --generate-params-header manifest_params.h
+    if [ "$?" != "0" ]
+    then
+      echo "<<$1>> Manifest JSON invalid"
+      cd -
+      return 1
+    fi
     make
     if [ "$?" != "0" ]
     then
       echo "<<$1>> Make failed"
-      cd -
-      return 1
-    fi
-    check_valid_json manifest.json
-    if [ "$?" != "0" ]
-    then
-      echo "<<$1>> Manifest JSON invalid"
       cd -
       return 1
     fi
@@ -43,7 +47,7 @@ function uumakeall {
 }
 
 function get_proj_manifest_name {
-    python3 -c "import json;print(json.load(open('$PROJ_BASE_PATH/$1/manifest.json'))['header']['name'])"
+    $MANIFEST_TOOL $PROJ_BASE_PATH/$1/manifest.json --get name
 }
 
 function uudeploy {
