@@ -1,6 +1,8 @@
 #include "userosc.h"
+#include "manifest_params.h"
 #include "combined_waveforms.h"
 #include "flt.h"
+#include "syndrum.h"
 
 #define NOTE_C 0
 #define NOTE_C_SHARP 1
@@ -26,8 +28,6 @@ struct compressed_osc {
 
 static struct compressed_osc osc;
 
-static float humanize = 0;
-
 // Overdrive
 static float gain = 1;
 static struct filter_state pre_dist_flt;
@@ -36,25 +36,14 @@ static const float invert_threshold = 17;
 static const float clip_threshold = 0.95;
 
 // Gate mode
-static uint8_t cut_at_noteoff = 0;
+static uint8_t cut_at_noteoff = 0, note_off_received = 0;
 
 // Mixing
 static float sample_mix_vol[NUM_WAVEFORMS];
-static float mix_vol = 1;
-// Mixing -- envelope
-static float mix_vol_mod = 1;
+static float mix_vol;
 
-// Fast pseudo random implementation
-static uint32_t rand_state = 0;
-// This tries to init the random engine differently for each voice
-static uint32_t rand_state_init = 0;
-static inline uint32_t next_random()
-{
-  rand_state ^= rand_state << 13;
-  rand_state ^= rand_state >> 17;
-  rand_state ^= rand_state << 5;
-  return rand_state;
-}
+// Synthesized drums
+static float syn_drum_mix = 0;
 
 ///////////
 
@@ -74,19 +63,20 @@ void OSC_INIT(uint32_t platform, uint32_t api)
 {
   (void)platform;
   (void)api;
-  osc.data = get_waveform(0, &osc.data_len);
-  for (int i = 0; i < NUM_WAVEFORMS; i++) sample_mix_vol[i] = 1;
+  set_syn_drum_params(0, 1);
 }
 
 void OSC_CYCLE(const user_osc_param_t *const params,
                int32_t *yn,
                const uint32_t frames)
 {
+  const float shape_lfo = q31_to_f32(params->shape_lfo);// * 10;
+  float mod_syn_drum_mix = syn_drum_mix + shape_lfo;
+  if (mod_syn_drum_mix > 1) mod_syn_drum_mix = 1;
+  else if (mod_syn_drum_mix < 0) mod_syn_drum_mix = 0;
 
-  rand_state_init += frames;
-
-  const float shape_lfo = q31_to_f32(params->shape_lfo) * 10;
-  const float mod_gain = shape_lfo + gain;
+  const float g1 = mod_syn_drum_mix < 0.5 ? 1 : 2 - 2 * mod_syn_drum_mix;
+  const float g2 = mod_syn_drum_mix < 0.5 ? 2 * mod_syn_drum_mix : 1;
 
   q31_t *__restrict y = (q31_t *)yn;
   const q31_t *y_e = y + frames;
@@ -94,32 +84,19 @@ void OSC_CYCLE(const user_osc_param_t *const params,
   for (; y != y_e;)
   {
     osc.phase += osc.inc;
-    float out = compressed_osc_get(&osc) * mod_gain;
-    out = process_filter(&pre_dist_flt, out);
+    float out = compressed_osc_get(&osc) * g1 + process_syn_drum() * g2;
+    out = process_filter(&pre_dist_flt, out * gain);
     if (out > invert_threshold || out < -invert_threshold) out *= -1;
     if (out > clip_threshold) out = clip_threshold;
     else if (out < -clip_threshold) out = -clip_threshold;
     
     out *= mix_vol;
-    
-    mix_vol *= mix_vol_mod;
+    if (note_off_received)
+        mix_vol *= 0.95;
 
     *(y++) = f32_to_q31(out);
   }
 }
-
-static const float freq_octaves[10] = {
-  0.5,
-  0.5743491774985174,
-  0.6597539553864471,
-  0.757858283255199,
-  0.8705505632961241,
-  1,
-  1.1486983549970349,
-  1.3195079107728942,
-  1.5157165665103982,
-  1.7411011265922482
-};
 
 void OSC_NOTEON(const user_osc_param_t *const params)
 {
@@ -127,7 +104,10 @@ void OSC_NOTEON(const user_osc_param_t *const params)
   const int pitch = (params->pitch) >> 8;
   const int note = pitch % 12;
   int octave = pitch / 12;
-  if (octave > 9) octave = 9;
+  float freq_octave = 0.5;
+  while (octave--)
+    freq_octave *= 1.148698354997035;
+
   int load_wave = 0;
   switch(note)
   {
@@ -171,22 +151,18 @@ void OSC_NOTEON(const user_osc_param_t *const params)
   if (load_wave == WAVEFORM_ID_crs) // Crash sample with lower sample rate
       base_freq = 32000.0 / k_samplerate;
   osc.data = get_waveform(load_wave, &osc.data_len);
-  
-  if (rand_state == 0)
-	rand_state = rand_state_init;
-  
-  const float random_pitch = (next_random() & 0xFFFFF) / (float)0xFFFFF;
-  osc.inc = base_freq * freq_octaves[octave] * (1 + 0.2 * humanize * random_pitch);
+  set_syn_drum_params(note, freq_octave);
+
+  osc.inc = base_freq * freq_octave;
   osc.phase = 0;
   mix_vol = sample_mix_vol[load_wave];
-  mix_vol_mod = 1;
+  note_off_received = 0;
 }
 
 void OSC_NOTEOFF(const user_osc_param_t *const params)
 {
   (void)params;
-  if (cut_at_noteoff)
-    mix_vol_mod = 0.95;
+  note_off_received = cut_at_noteoff;
 }
 
 static void set_mix_vol(uint8_t idx, uint16_t value)
@@ -194,45 +170,44 @@ static void set_mix_vol(uint8_t idx, uint16_t value)
   sample_mix_vol[idx] = 1.0 - value / 100.0;
 }
 
-
 void OSC_PARAM(uint16_t index, uint16_t value)
 {
   switch (index)
   {
-  case k_user_osc_param_id1:
+  case USER_PARAM__Gate_mode__idx:
     cut_at_noteoff = value ? 1 : 0;
     break;
-  case k_user_osc_param_id2: // kick group
+  case USER_PARAM__Kick_cut__idx:
     set_mix_vol(WAVEFORM_ID_bd, value);
     set_mix_vol(WAVEFORM_ID_bd1, value);
     break;
-  case k_user_osc_param_id3: // snare group
+  case USER_PARAM__Snare_cut__idx:
     set_mix_vol(WAVEFORM_ID_sd, value);
     set_mix_vol(WAVEFORM_ID_sd1, value);
     set_mix_vol(WAVEFORM_ID_hcp, value);
     break;
-  case k_user_osc_param_id4: // hihat group
+  case USER_PARAM__Hats_cut__idx:
     set_mix_vol(WAVEFORM_ID_hhc, value);
     set_mix_vol(WAVEFORM_ID_hho, value);
     break;
-  case k_user_osc_param_id5: // crash group
+  case USER_PARAM__Crash_cut__idx:
     set_mix_vol(WAVEFORM_ID_crs, value);
     break;
-  case k_user_osc_param_id6: // perc group
+  case USER_PARAM__Perc_cut__idx:
     set_mix_vol(WAVEFORM_ID_tam, value);
     set_mix_vol(WAVEFORM_ID_cow, value);
     set_mix_vol(WAVEFORM_ID_rim, value);
     set_mix_vol(WAVEFORM_ID_ht, value);
     break;
-  case k_user_osc_param_shape:
+  case k_user_osc_param_shiftshape:
     {
       const float fval = param_val_to_f32(value);
       gain = 1.0 + fval * 20;
       init_filter(&pre_dist_flt, (1 - fval * 0.8) * 0.5 * k_samplerate, k_samplerate);
     }
     break;
-  case k_user_osc_param_shiftshape:
-    humanize = param_val_to_f32(value);
+  case k_user_osc_param_shape:
+    syn_drum_mix = param_val_to_f32(value);
     break;
   default:
     break;

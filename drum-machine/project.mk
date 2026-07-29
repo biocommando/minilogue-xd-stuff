@@ -4,7 +4,7 @@
 
 PROJECT = TR707
 
-UCSRC = osc.c combined_waveforms.c ../common/src/flt.c
+UCSRC = osc.c combined_waveforms.c syndrum.c ../common/src/flt.c ../common/src/simple_oscillator.c
 
 UCXXSRC = 
 

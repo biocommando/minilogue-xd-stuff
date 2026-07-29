@@ -5,7 +5,9 @@ A lo-fi TR707ish drum machine user oscillator for the **Korg Minilogue XD** mult
 A compiled and tested binary comes with this repository. To build, use the **Minilogue SDK**. To use the same workflow as I, use the legacy building method and place this repository right under `logue-sdk/platform/minilogue-xd`.
 
 ## Architecture
-Plays back 12 different lo-fi drum samples:
+Has 2 drum engines that can be mixed with the shape parameters. One uses lo-fi PCM samples and the other uses a simple synth engine.
+
+The 12 different drum sounds are:
 - kick (2 variations)
 - snare (2 variations)
 - handclap
@@ -17,9 +19,7 @@ Plays back 12 different lo-fi drum samples:
 - rimshot
 - tom
 
-Uses a custom raw waveform format that compresses 5 4-bit samples into one 16 bit word. Has overdrive distortion and an optional volume envelope for soundshaping. Has mix groups for setting drum sample levels.
-
-The samples can be played back with different playback speeds (pitch) using different octaves. In each octave the note to sample mapping is the following:
+The drum sounds can be played back with different playback speeds (pitch) using different octaves. In each octave the note to sample mapping is the following:
 - C = kick 1
 - C# = kick 2
 - D = snare 1
@@ -32,6 +32,34 @@ The samples can be played back with different playback speeds (pitch) using diff
 - A = crash
 - A# = rimshot
 - B = tom
+
+Has overdrive distortion for sound shaping and mix groups for setting drum sample levels.
+
+### Sample playback engine
+Uses a custom raw waveform format that compresses 5 4-bit samples into one 16 bit word.
+One word consists of data:
+```
+offset | data
+-------------------------------------
+0      | sign bit for the whole word
+1      | sample 1 (3 bits)
+4      | sample 2 (3 bits)
+7      | sample 3 (3 bits)
+10     | sample 4 (3 bits)
+13     | sample 5 (3 bits)
+```
+
+The sample playback speed varies from 0.5 to ~1.74 depending on the played octave.
+
+### Drum synth engine
+The engine consists of a single oscillator with triangle, sawtooth and square waveforms and a noise source. Each drum sound is generated using the following parameters:
+- Oscillator waveform
+- Oscillator pitch
+    * Affected by the played octave
+- Oscillator pitch modulation envelope length
+- Oscillator mix
+- Noise mix
+- Master volume envelope length
 
 ### Parameters
 
@@ -65,8 +93,3 @@ The samples can be played back with different playback speeds (pitch) using diff
 | cowbell    | G#  | perc         |
 | rimshot    | A#  | perc         |
 | tom        | B   | perc         |
-
-
-## License
-Original code MIT licensed (see LICENSE.md). Korg code BSD 3-Clause Licensed, license headers retained in relevant code files.
-
