@@ -1,7 +1,6 @@
 #include "userosc.h"
 #include "manifest_params.h"
 #include "combined_waveforms.h"
-#include "flt.h"
 #include "syndrum.h"
 
 #define NOTE_C 0
@@ -30,7 +29,6 @@ static struct compressed_osc osc;
 
 // Overdrive
 static float gain = 1;
-static struct filter_state pre_dist_flt;
 
 static const float invert_threshold = 17;
 static const float clip_threshold = 0.95;
@@ -85,7 +83,7 @@ void OSC_CYCLE(const user_osc_param_t *const params,
   {
     osc.phase += osc.inc;
     float out = compressed_osc_get(&osc) * g1 + process_syn_drum() * g2;
-    out = process_filter(&pre_dist_flt, out * gain);
+    out *= gain;
     if (out > invert_threshold || out < -invert_threshold) out *= -1;
     if (out > clip_threshold) out = clip_threshold;
     else if (out < -clip_threshold) out = -clip_threshold;
@@ -203,7 +201,7 @@ void OSC_PARAM(uint16_t index, uint16_t value)
     {
       const float fval = param_val_to_f32(value);
       gain = 1.0 + fval * 20;
-      init_filter(&pre_dist_flt, (1 - fval * 0.8) * 0.5 * k_samplerate, k_samplerate);
+      //init_filter(&pre_dist_flt, (1 - fval * 0.8) * 0.5 * k_samplerate, k_samplerate);
     }
     break;
   case k_user_osc_param_shape:

@@ -10,7 +10,7 @@ UCXXSRC =
 
 UINCDIR = ../common/src
 
-UDEFS =
+UDEFS = -DFLT_NO_LPF
 
 ULIB = 
 

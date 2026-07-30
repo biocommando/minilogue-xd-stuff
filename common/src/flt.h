@@ -3,8 +3,14 @@
 struct filter_state
 {
     float factor;
+#ifndef FLT_NO_LPF
     float ifactor;
-    float state0, state1;
+#endif
+    float state0
+#ifndef FLT_NO_HPF
+    ,state1
+#endif
+;
 };
 
 void init_filter(struct filter_state *st, float cutoff, float sample_rate);

@@ -60,6 +60,10 @@ The engine consists of a single oscillator with triangle, sawtooth and square wa
 - Oscillator mix
 - Noise mix
 - Master volume envelope length
+- Flags:
+    * Use high-pass filter at 6 kHz
+    * Use high-pass filter at 1 kHz (filter settings mutually exclusive)
+    * Use amplitude LFO (25 Hz sawtooth)
 
 ### Parameters
 
