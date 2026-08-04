@@ -2,7 +2,7 @@ PROJ_BASE_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[-1]}")/..")
 MANIFEST_TOOL=$PROJ_BASE_PATH/common/scripts/manifest_tool.py
 
 function uulist {
-    find "$PROJ_BASE_PATH"/ -maxdepth 1 -type d -regex ".*/[a-z][^/]*" | grep -o "[a-z0-9-]*$" | grep -v common
+    find "$PROJ_BASE_PATH"/ -maxdepth 1 -type d -regex ".*/[a-z][^/]*" | grep -Ev ".*/(release.*|common)$" | grep -o "[a-z0-9-]*$"
 }
 
 function uumake {
@@ -33,36 +33,89 @@ function uumake {
     cd -
 }
 
-function uumakeall {
-    for p in $(list_proj)
-    do
-        echo "+++++++++++++ Building $p +++++++++++++"
-        clean_make_install $p
-        if [ "$?" != "0" ]
-        then
-          echo "<<$p>> Build failed"
-          break
-        fi
-    done
+function get_proj_manifest_field {
+    $MANIFEST_TOOL "$PROJ_BASE_PATH/$1/manifest.json" --get $2
 }
 
 function get_proj_manifest_name {
-    $MANIFEST_TOOL $PROJ_BASE_PATH/$1/manifest.json --get name
+    get_proj_manifest_field "$1" name
 }
 
 function uudeploy {
     name=$(get_proj_manifest_name $1)
     path="$PROJ_BASE_PATH/$1/$name.mnlgxdunit"
-    cp "$path" /mnt/shared/
-    echo copied $path to /mnt/shared/
+    cp "$path" "$MINILOGUE_STUFF_DEPLOY_DIR"
+    echo copied $path to "$MINILOGUE_STUFF_DEPLOY_DIR"
 }
 
 function uudist {
     name=$(get_proj_manifest_name $1)
     path="$PROJ_BASE_PATH/$1/$name.mnlgxdunit"
     path2="$PROJ_BASE_PATH/$1/dist/"
+    mkdir -p "$path2"
     cp "$path" "$path2"
     echo copied $path to $path2
+}
+
+function uuvers {
+    version=$2
+    $MANIFEST_TOOL $PROJ_BASE_PATH/$1/manifest.json --set-version $version
+}
+
+function uurelease {
+    version=$1
+    dest=$PROJ_BASE_PATH/release-$version
+    rm -rf $dest
+    mkdir -p $dest
+    ok=1
+    echo "# A Collection of Korg Minilogue XD User Modules" > $dest/README.md
+    echo "List of modules:" >> $dest/README.md
+    for p in $(uulist | sort)
+    do
+        echo "+++++++++++++ Building $p +++++++++++++"
+        uuvers $p $version
+        if [ "$?" != "0" ]
+        then
+          echo "<<$p>> Setting version failed"
+          return 1
+        fi
+        uumake $p
+        if [ "$?" != "0" ]
+        then
+          echo "<<$p>> Build failed"
+          ok=0
+          break
+        fi
+        name=$(get_proj_manifest_name $p)
+        path="$PROJ_BASE_PATH/$p/$name.mnlgxdunit"
+        cp "$path" $dest
+        if [ "$?" != "0" ]
+        then
+          echo "<<$p>> Copying binary failed"
+          return 1
+        fi
+        cp "$PROJ_BASE_PATH/$p/README.md" $dest/README_$name.md
+        if [ "$?" != "0" ]
+        then
+          echo "<<$p>> Copying readme failed"
+          return 1
+        fi
+        module=$(get_proj_manifest_field $p module)
+        echo "- $name" >> $dest/README.md
+        echo "    - type: $module" >> $dest/README.md
+        echo "    - description: $(head -n 1 "$PROJ_BASE_PATH/$p/README.md")" >> $dest/README.md        
+    done
+    echo "# License" >> $dest/README.md
+    echo "### Module code" >> $dest/README.md
+    cat $PROJ_BASE_PATH/LICENSE.md >> $dest/README.md
+    echo "----" >> $dest/README.md
+    echo "### Logue SDK" >> $dest/README.md
+    cat $PROJ_BASE_PATH/../../../LICENSE >> $dest/README.md
+    if [ "$ok" == "1" ]
+    then
+        echo "Created release-$version directory succesfully, creating zip package"
+        zip -jr "$dest.zip" "$dest"
+    fi
 }
 
 function uuhelp {
@@ -70,10 +123,11 @@ function uuhelp {
     echo "  uuhelp -- Print this message"
     echo "  uulist -- lists all projects"
     echo "  uumake <proj> -- runs make, checks manifest.json"
-    echo "                               and runs make install for the selected project"
-    echo "  uumakeall -- runs clean_make_install for all projects"
-    echo "  uudeploy <proj> -- copies the selected project to shared directory"
+    echo "                   and runs make install for the selected project"
+    echo "  uudeploy <proj> -- copies the selected project to MINILOGUE_STUFF_DEPLOY_DIR"
     echo "  uudist <proj> -- copies the built binary to dist/"
+    echo "  uuvers <proj> <version> -- sets the manifest.json version"
+    echo "  uurelease <version> -- creates release package with the version number"
 }
 
 uuhelp
