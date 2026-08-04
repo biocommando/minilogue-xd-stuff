@@ -4,11 +4,11 @@
 
 #include "userosc.h"
 
-// Gate mode
-// Range: 0 to 1 
-#define USER_PARAM__Gate_mode__idx k_user_osc_param_id1
-#define USER_PARAM__Gate_mode__min 0
-#define USER_PARAM__Gate_mode__max 1
+// Synth var
+// Range: 0 to 31 
+#define USER_PARAM__Synth_var__idx k_user_osc_param_id1
+#define USER_PARAM__Synth_var__min 0
+#define USER_PARAM__Synth_var__max 31
 
 // Kick cut
 // Range: 0 to 100 %

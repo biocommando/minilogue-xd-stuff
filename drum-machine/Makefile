@@ -149,6 +149,8 @@ all: PRE_ALL $(OBJS) $(OUTFILES) POST_ALL
 	@echo Done
 	@echo
 
+genwaves:
+	gcc -I. $(INCDIR) -I../common/ ../common/wav_handler/wav_handler.c ../common/src/flt.c ../common/src/simple_oscillator.c syndrum.c -DGENWAVES -o genwaves
 
 PRE_ALL:
 

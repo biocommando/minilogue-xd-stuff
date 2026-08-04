@@ -34,7 +34,7 @@ static const float invert_threshold = 17;
 static const float clip_threshold = 0.95;
 
 // Gate mode
-static uint8_t cut_at_noteoff = 0, note_off_received = 0;
+static uint8_t note_off_received = 0;
 
 // Mixing
 static float sample_mix_vol[NUM_WAVEFORMS];
@@ -160,7 +160,7 @@ void OSC_NOTEON(const user_osc_param_t *const params)
 void OSC_NOTEOFF(const user_osc_param_t *const params)
 {
   (void)params;
-  note_off_received = cut_at_noteoff;
+  note_off_received = 1;
 }
 
 static void set_mix_vol(uint8_t idx, uint16_t value)
@@ -172,8 +172,8 @@ void OSC_PARAM(uint16_t index, uint16_t value)
 {
   switch (index)
   {
-  case USER_PARAM__Gate_mode__idx:
-    cut_at_noteoff = value ? 1 : 0;
+  case USER_PARAM__Synth_var__idx:
+    set_syn_drum_variation(value);
     break;
   case USER_PARAM__Kick_cut__idx:
     set_mix_vol(WAVEFORM_ID_bd, value);

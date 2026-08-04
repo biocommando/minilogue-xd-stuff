@@ -10,9 +10,9 @@
         "num_param": 6,
         "params": [
             [
-                "Gate mode",
+                "Synth var",
                 0,
-                1,
+                31,
                 ""
             ],
             [
