@@ -1,0 +1,17 @@
+{
+    "header" : 
+    {
+        "platform" : "minilogue-xd",
+        "module" : "osc",
+        "api" : "1.1-0",
+        "dev_id" : 0,
+        "prg_id" : 0,
+        "version" : "1.0-0",
+        "name" : "supersaw",
+        "num_param" : 2,
+        "params" : [
+            ["Amp dist",    0, 100, "%"],
+            ["Ph rand mod",    0, 100, "%"]
+          ]
+    }
+}
