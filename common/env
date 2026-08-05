@@ -65,8 +65,8 @@ function uuvers {
 function uurelease {
     version=$1
     dest=$PROJ_BASE_PATH/release-$version
-    rm -rf $dest
-    mkdir -p $dest
+    rm -rf "$dest" "$dest.zip"
+    mkdir -p "$dest"
     ok=1
     echo "# A Collection of Korg Minilogue XD User Modules" > $dest/README.md
     echo "List of modules:" >> $dest/README.md
