@@ -3,6 +3,7 @@
 # #############################################################################
 
 PLATFORMDIR ?= $(abspath ../..)
+TEMPLATEDIR = $(PLATFORMDIR)/dummy-modfx
 
 PROJECTDIR ?= $(abspath .)
 
@@ -14,7 +15,7 @@ EXTDIR ?= $(PLATFORMDIR)/../ext
 
 CMSISDIR ?= $(EXTDIR)/CMSIS/CMSIS
 
-LDDIR ?= $(PROJECTDIR)/ld
+LDDIR ?= $(TEMPLATEDIR)/ld
 
 ZIP ?= /usr/bin/zip
 ZIP_ARGS := -r -m -q
@@ -89,7 +90,7 @@ ASMSRC := $(UASMSRC)
 
 ASMXSRC := $(UASMXSRC)
 
-CSRC := $(PROJECTDIR)/tpl/_unit.c $(UCSRC)
+CSRC := $(TEMPLATEDIR)/tpl/_unit.c $(UCSRC)
 
 CXXSRC := $(UCXXSRC)
 
