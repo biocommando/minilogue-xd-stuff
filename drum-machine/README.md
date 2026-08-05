@@ -74,7 +74,9 @@ The engine consists of a single oscillator with triangle, sawtooth and square wa
     * "Humanization", random pitch variations applied on note on event
 
 #### User parameters
-- 1: Gate mode (stop on note release / play to end)
+- 1: Synth drum engine variation
+	- Flips bits in drum synth engine's "flags" parameter to create
+	  slight variations in how the whole kit sounds like.
 - 2: Kick attenuation
 - 3: Snare & handclap attenuation
 - 4: Hihats attenuation
