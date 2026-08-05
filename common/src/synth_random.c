@@ -7,7 +7,7 @@ unsigned synth_random()
     return state;
 }
 
-void synth_random_reset()
+void synth_random_reset(unsigned value)
 {
-    state = 123;
+    state = value ? value : 123;
 }
