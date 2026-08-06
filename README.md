@@ -18,8 +18,6 @@ user-osc-fx/
     build/          Build directory
     dist/           Contains the latest mnlgxdunit binary that can be loaded
                     to Minilogue XD unit.
-    ld/             Logue SDK specifics
-    tpl/            Logue SDK specifics
     *.c/*.h         Source files
     Makefile        Makefile
     project.mk      Included by Makefile, contains pointers to user sources
