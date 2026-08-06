@@ -4,15 +4,27 @@
 
 #include "userosc.h"
 
+// Num oscs
+// Range: 0 to 3 
+#define USER_PARAM__Num_oscs__idx k_user_osc_param_id1
+#define USER_PARAM__Num_oscs__min 0
+#define USER_PARAM__Num_oscs__max 3
+
 // Amp dist
 // Range: 0 to 100 %
-#define USER_PARAM__Amp_dist__idx k_user_osc_param_id1
+#define USER_PARAM__Amp_dist__idx k_user_osc_param_id2
 #define USER_PARAM__Amp_dist__min 0
 #define USER_PARAM__Amp_dist__max 100
 
 // Ph rand mod
 // Range: 0 to 100 %
-#define USER_PARAM__Ph_rand_mod__idx k_user_osc_param_id2
+#define USER_PARAM__Ph_rand_mod__idx k_user_osc_param_id3
 #define USER_PARAM__Ph_rand_mod__min 0
 #define USER_PARAM__Ph_rand_mod__max 100
+
+// Attenuation
+// Range: 0 to 100 %
+#define USER_PARAM__Attenuation__idx k_user_osc_param_id4
+#define USER_PARAM__Attenuation__min 0
+#define USER_PARAM__Attenuation__max 100
 

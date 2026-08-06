@@ -7,8 +7,14 @@
         "prg_id": 0,
         "version": "1.1-0",
         "name": "supersaw",
-        "num_param": 2,
+        "num_param": 4,
         "params": [
+            [
+                "Num oscs",
+                0,
+                3,
+                ""
+            ],
             [
                 "Amp dist",
                 0,
@@ -17,6 +23,12 @@
             ],
             [
                 "Ph rand mod",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Attenuation",
                 0,
                 100,
                 "%"
