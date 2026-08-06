@@ -4,7 +4,7 @@
 #include "simple_oscillator.h"
 #include "lookups.h"
 
-#define N_OSC 9
+#define N_OSC 13
 
 static SimpleOscillator oscs[N_OSC];
 float orig_freqs[N_OSC];
@@ -127,11 +127,11 @@ void OSC_PARAM(uint16_t index, uint16_t value)
         if (value == 0)
             n_oscs = 7;
         else if (value == 1)
-            n_oscs = N_OSC;
+            n_oscs = 9;
         else if (value == 2)
-            n_oscs = 5;
+            n_oscs = 11;
         else if (value == 3)
-            n_oscs = 3;
+            n_oscs = 13;
     }
     break;
   case k_user_osc_param_shape:
