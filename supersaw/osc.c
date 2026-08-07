@@ -25,9 +25,9 @@ void OSC_INIT(uint32_t platform, uint32_t api)
 {
     (void)platform;
     (void)api;
-    memset(oscs, 0, sizeof(oscs));
     for (int i = 0; i < N_OSC; i++)
     {
+        oscs[i].phase = oscs[i].frequency = 0;
         orig_freqs[i] = 1;
     }
 }
