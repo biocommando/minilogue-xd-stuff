@@ -38,7 +38,11 @@ __fast_inline void update_inc(const user_osc_param_t *const params, uint32_t fra
     for (int i = 0; i < N_OSC; i++)
     {
         const float drift = calculate_drift(&drift_acc[i], frames);
-        oscs[i].frequency = inc * orig_freqs[i] + drift * 0.0002 * drift_p;
+        // Max drift +-1 semitone.
+        // Magic numbers:
+        // 2**(1/12) - 1/(2**(1/12)) = 0.11558878 (whole range)
+        // 1/(2**(1/12)) = 0.94387432 (range min)
+        oscs[i].frequency = inc * orig_freqs[i] * (0.94387432 + drift * 0.11558878 * drift_p);
     }
 }
 
