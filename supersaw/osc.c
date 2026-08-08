@@ -3,8 +3,11 @@
 #include "manifest_params.h"
 #include "simple_oscillator.h"
 #include "lookups.h"
+#include "compclip.h"
 
 #define N_OSC 13
+
+COMPCLIP(compress, 0.85, 0.1, 0.99)
 
 static SimpleOscillator oscs[N_OSC];
 float orig_freqs[N_OSC];
@@ -34,15 +37,15 @@ void OSC_INIT(uint32_t platform, uint32_t api)
 
 __fast_inline void update_inc(const user_osc_param_t *const params, uint32_t frames)
 {
-    float inc = osc_w0f_for_note((params->pitch) >> 8, params->pitch & 0xFF);
+    // Max drift +-1 semitone.
+    const float _drift_factor_positive = 0.05946309435929531 * drift_p; // 2**(1/12)-1
+    const float _drift_factor_negative = 0.05612568731830658 * drift_p; // 1-1/(2**(1/12))
+    const float inc = osc_w0f_for_note((params->pitch) >> 8, params->pitch & 0xFF);
     for (int i = 0; i < N_OSC; i++)
     {
         const float drift = calculate_drift(&drift_acc[i], frames);
-        // Max drift +-1 semitone.
-        // Magic numbers:
-        // 2**(1/12) - 1/(2**(1/12)) = 0.11558878 (whole range)
-        // 1/(2**(1/12)) = 0.94387432 (range min)
-        oscs[i].frequency = inc * orig_freqs[i] * (0.94387432 + drift * 0.11558878 * drift_p);
+        const float drift_offset = (drift > 0 ? _drift_factor_positive : _drift_factor_negative) * drift;
+        oscs[i].frequency = inc * orig_freqs[i] * (1 + drift_offset);
     }
 }
 
@@ -54,7 +57,7 @@ __fast_inline float calculate_supersaw()
         SimpleOscillator_calculateNext(&oscs[i]);
         out += SimpleOscillator_getValue(&oscs[i], OSC_SAW) * osc_vol[i];
     }
-    return out;
+    return compress(out);
 }
 
 void OSC_CYCLE(const user_osc_param_t *const params,
