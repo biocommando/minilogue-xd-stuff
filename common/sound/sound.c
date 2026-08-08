@@ -22,7 +22,7 @@ typedef struct
 
 int main(int argc, char **argv)
 {
-    char fn[128] = "output.wav";
+    char fn[1024] = "output.wav";
 
     SeqEvt evt[32];
     int n_evt = 0;
@@ -114,6 +114,7 @@ int main(int argc, char **argv)
     }
     struct wav_file wav;
     create_wav_file(&wav, step_sz * 33, 1, 16, k_samplerate);
+    OSC_INIT(0, 0);
     for (int i = 0; i < 6; i++)
     {
         OSC_PARAM(i, user_p[i]);

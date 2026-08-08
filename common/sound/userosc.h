@@ -39,22 +39,17 @@ static inline float param_val_to_f32(uint16_t v)
     return v / 1023.0f;
 }
 
-static inline float q31_to_f32(int32_t i)
-{
-    return i / (float)INT32_MAX;
-}
-
-static inline int32_t f32_to_q31(float f)
-{
-    int64_t l = f * INT32_MAX;
-    if (l > INT32_MAX)
-        return INT32_MAX;
-    if (l < INT32_MIN)
-        return INT32_MIN;
-    return (int32_t)l;
-}
-
 typedef int32_t q31_t;
+
+
+#define q15_to_f32_c 3.05175781250000e-005f
+#define q31_to_f32_c 4.65661287307739e-010f
+
+#define q15_to_f32(q) ((float)(q) * q15_to_f32_c)
+#define q31_to_f32(q) ((float)(q) * q31_to_f32_c)
+
+#define f32_to_q15(f)   ((q15_t)ssat((q31_t)((float)(f) * ((1<<15)-1)),16))
+#define f32_to_q31(f)   ((q31_t)((float)(f) * (float)0x7FFFFFFF))
 
 #define __fast_inline
 
