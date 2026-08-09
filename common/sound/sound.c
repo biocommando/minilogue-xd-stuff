@@ -20,16 +20,20 @@ typedef struct
 #define NOTE_OFF_EVT 2
 #define EMPTY_EVT 0
 
-int main(int argc, char **argv)
+#define N_EVENTS 32
+
+typedef struct
 {
-    char fn[1024] = "output.wav";
+    char fn[1024];
+    uint16_t user_p[6], shape, sshape;
+    float pitch_lfo_amt, shape_lfo_amt;
+    int step_sz;
+    SeqEvt evt[N_EVENTS];
+    int n_evt;
+} Params;
 
-    SeqEvt evt[32];
-    int n_evt = 0;
-
-    uint16_t user_p[6] = {0, 0, 0, 0, 0, 0}, shape = 0, sshape = 0;
-    float pitch_lfo_amt = 0, shape_lfo_amt = 0;
-    int step_sz = 60.0 / 4 / 120 * k_samplerate;
+static void parse_args(Params *p, int argc, char **argv)
+{
     for (int i = 1; i < argc; i++)
     {
         char sel = argv[i][0];
@@ -41,92 +45,113 @@ int main(int argc, char **argv)
         sscanf(arg, "%d", &v);
         if (sel == '+' || sel == '-' || sel == '_')
         {
-            if (n_evt == 32)
+            if (p->n_evt == N_EVENTS)
             {
-                puts("Warning: only 32 events supported");
+                printf("Warning: only %d events supported\n", N_EVENTS);
             }
             else
             {
                 if (sel == '+')
                 {
-                    evt[n_evt].type = NOTE_ON_EVT;
-                    evt[n_evt].value = v;
-                    n_evt++;
+                    p->evt[p->n_evt].type = NOTE_ON_EVT;
+                    p->evt[p->n_evt].value = v;
+                    p->n_evt++;
                 }
                 else if (sel == '-')
                 {
-                    evt[n_evt].type = NOTE_OFF_EVT;
-                    evt[n_evt].value = v;
-                    n_evt++;
+                    p->evt[p->n_evt].type = NOTE_OFF_EVT;
+                    p->evt[p->n_evt].value = v;
+                    p->n_evt++;
                 }
                 else if (sel == '_')
                 {
                     if (v <= 0)
                         v = 1;
-                    v = n_evt + v;
-                    if (v > 32)
+                    v = p->n_evt + v;
+                    if (v > N_EVENTS)
                     {
-                        puts("Warning: only 32 events supported");
-                        v = 32;
+                        printf("Warning: only %d events supported\n", N_EVENTS);
+                        v = N_EVENTS;
                     }
-                    while (n_evt < v)
+                    while (p->n_evt < v)
                     {
-                        evt[n_evt].type = EMPTY_EVT;
-                        n_evt++;
+                        p->evt[p->n_evt].type = EMPTY_EVT;
+                        p->n_evt++;
                     }
                 }
             }
         }
         if (sel == 't')
         {
-            step_sz = 60.0 / 4 / v * k_samplerate;
+            p->step_sz = 60.0 / 4 / v * k_samplerate;
         }
         if (sel >= 'A' && sel <= 'F')
         {
-            user_p[sel - 'A'] = v;
+            p->user_p[sel - 'A'] = v;
         }
         if (sel == 's')
         {
-            shape = v;
+            p->shape = v;
         }
         if (sel == 'S')
         {
-            sshape = v;
+            p->sshape = v;
         }
         if (sel == 'p')
         {
-            pitch_lfo_amt = 0.01 * v;
+            p->pitch_lfo_amt = 0.01 * v;
         }
         if (sel == 'h')
         {
-            shape_lfo_amt = 0.01 * v;
+            p->shape_lfo_amt = 0.01 * v;
         }
         if (sel == 'o')
         {
-            strcpy(fn, arg);
+            strcpy(p->fn, arg);
         }
     }
-    if (n_evt == 0 && n_evt < 32)
+    if (p->n_evt == 0 && p->n_evt < N_EVENTS)
     {
-        evt[n_evt].type = NOTE_ON_EVT;
-        evt[n_evt].value = 60;
-        n_evt++;
+        p->evt[p->n_evt].type = NOTE_ON_EVT;
+        p->evt[p->n_evt].value = 60;
+        p->n_evt++;
     }
-    struct wav_file wav;
-    create_wav_file(&wav, step_sz * 33, 1, 16, k_samplerate);
+}
+
+static void init_oscillator_module(Params *p)
+{
     OSC_INIT(0, 0);
     for (int i = 0; i < 6; i++)
     {
-        OSC_PARAM(i, user_p[i]);
+        OSC_PARAM(i, p->user_p[i]);
     }
-    OSC_PARAM(k_user_osc_param_shape, shape);
-    OSC_PARAM(k_user_osc_param_shiftshape, sshape);
+    OSC_PARAM(k_user_osc_param_shape, p->shape);
+    OSC_PARAM(k_user_osc_param_shiftshape, p->sshape);
+}
+
+static uint16_t note_and_fine_to_pitch(int note, float finetune)
+{
+    int coarse = 0;
+    int fine = 255 * finetune;
+    if (fine < 0)
+    {
+        coarse -= 1;
+        fine = 255 + fine;
+    }
+    return ((note + coarse) << 8) | (fine & 0xFF);
+}
+
+static void render_sound(Params *p)
+{
+    struct wav_file wav;
+    create_wav_file(&wav, p->step_sz * (N_EVENTS + 1), 1, 16, k_samplerate);
+    init_oscillator_module(p);
 
     BasicOscillator lfo;
     init_BasicOscillator(&lfo, k_samplerate);
     BasicOscillator_setFrequency(&lfo, 4.0 / k_samplerate);
 
-    int voice_state = 0, current_pitch = 0;
+    int current_pitch = 0;
     int sample_i = 0;
     int bsize = 8;
     int evt_i = 0;
@@ -135,33 +160,24 @@ int main(int argc, char **argv)
     {
         float lfo_v = BasicOscillator_getValue(&lfo, OSC_TRIANGLE);
 
-        int coarse = 0;
-        int fine = 255 * lfo_v * pitch_lfo_amt;
-        if (fine < 0)
-        {
-            coarse -= 1;
-            fine = 255 + fine;
-        }
         user_osc_param_t params;
 
-        params.pitch = ((current_pitch + coarse) << 8) | (fine & 0xFF);
-        params.shape_lfo = f32_to_q31(lfo_v * shape_lfo_amt);
+        params.pitch = note_and_fine_to_pitch(current_pitch, lfo_v * p->pitch_lfo_amt);
+        params.shape_lfo = f32_to_q31(lfo_v * p->shape_lfo_amt);
         OSC_CYCLE(&params, q31_buf, bsize);
         for (int i = 0; i < bsize; i++)
         {
-            if (sample_i == evt_i * step_sz && evt_i < n_evt)
+            if (sample_i == evt_i * p->step_sz && evt_i < p->n_evt)
             {
-                int type = evt[evt_i].type;
+                int type = p->evt[evt_i].type;
                 if (type == NOTE_ON_EVT)
                 {
-                    voice_state = 1;
-                    current_pitch = evt[evt_i].value;
-                    params.pitch = ((current_pitch + coarse) << 8) | fine & 0xFF;
+                    current_pitch = p->evt[evt_i].value;
+                    params.pitch = note_and_fine_to_pitch(current_pitch, lfo_v * p->pitch_lfo_amt);
                     OSC_NOTEON(&params);
                 }
                 if (type == NOTE_OFF_EVT)
                 {
-                    voice_state = 0;
                     OSC_NOTEOFF(&params);
                 }
                 evt_i++;
@@ -176,9 +192,19 @@ int main(int argc, char **argv)
         if (bsize > 64)
             bsize = 8;
     }
-    if (write_wav_file(fn, &wav) != 0)
+    if (write_wav_file(p->fn, &wav) != 0)
         puts("Writing output file failed");
-    free_wav_file(&wav);
+    free_wav_file(&wav);    
+}
 
-    return 1;
+int main(int argc, char **argv)
+{
+
+    Params p;
+    memset(&p, 0, sizeof(p));
+    strcpy(p.fn, "output.wav");
+    p.step_sz = 60.0 / 4 / 120 * k_samplerate;
+    parse_args(&p, argc, argv);
+    render_sound(&p);
+    return 0;
 }
