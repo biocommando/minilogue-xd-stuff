@@ -4,14 +4,15 @@
 #include "simple_oscillator.h"
 #include "lookups.h"
 #include "compclip.h"
+#include "flt.h"
 
 #define N_OSC 13
 
 COMPCLIP(compress, 0.85, 0.1, 0.99)
 
 static SimpleOscillator oscs[N_OSC];
-float orig_freqs[N_OSC];
-float osc_vol[N_OSC];
+static float orig_freqs[N_OSC];
+static float osc_vol[N_OSC];
 
 static float drift_p = 0;
 static uint32_t drift_acc[N_OSC];
@@ -20,7 +21,17 @@ static float ph_rand = 0;
 
 static uint8_t first_note_on = 0;
 static uint32_t synth_random_init_value = 1;
-uint8_t n_oscs = N_OSC;
+static uint8_t n_oscs = N_OSC;
+
+static uint8_t gate_mode = 1, gate_pattern_i, gate_pattern[6];
+#define GATE_PATTERN(a,b,c,d,e,f) \
+    { gate_pattern[0] = a; gate_pattern[1] = b; gate_pattern[2] = c; \
+      gate_pattern[3] = d; gate_pattern[4] = e; gate_pattern[5] = f; \
+    }
+float gate_vol = 1;
+
+struct filter_state hpf = {0, 0, 0, 0};
+static uint8_t hpf_enabled = 0;
 
 #define RANDOM() ((synth_random()&0xFFFFF)/(float)0xFFFFF)
 
@@ -57,9 +68,12 @@ __fast_inline float calculate_supersaw()
         SimpleOscillator_calculateNext(&oscs[i]);
         out += SimpleOscillator_getValue(&oscs[i], OSC_SAW) * osc_vol[i];
     }
+    if (hpf_enabled)
+        out = process_hp_filter(&hpf, out);
     return compress(out);
 }
 
+float shape_lfo_peak = 0;
 void OSC_CYCLE(const user_osc_param_t *const params,
                int32_t *yn,
                const uint32_t frames)
@@ -70,20 +84,34 @@ void OSC_CYCLE(const user_osc_param_t *const params,
   q31_t *__restrict y = (q31_t *)yn;
   const q31_t *y_e = y + frames;
 
+  const float shape_lfo = q31_to_f32(params->shape_lfo);
+  if (shape_lfo > shape_lfo_peak)
+    shape_lfo_peak = shape_lfo;
+  if ((gate_mode && shape_lfo > 0.01) || (!gate_mode && shape_lfo < -0.01))
+  {
+    gate_mode = 1 - gate_mode;
+    gate_pattern_i++;
+    if (gate_pattern_i == 6) gate_pattern_i = 0;
+    gate_vol = shape_lfo_peak;
+    shape_lfo_peak = 0;
+  }
+      
+  float vol = gate_pattern[gate_pattern_i] ? 1 : gate_vol;
   for (; y != y_e;)
   {
-    *(y++) = f32_to_q31(calculate_supersaw());
+    *(y++) = f32_to_q31(calculate_supersaw() * vol);
   }
 }
 
 void OSC_NOTEON(const user_osc_param_t *const params)
 {
-    (void)params;
     if (!first_note_on)
     {
         first_note_on = 1;
-        synth_random_reset(synth_random_init_value);
+        synth_random_reset(synth_random_init_value + params->pitch);
     }
+    gate_pattern_i = 5;
+    gate_mode = 1;
     for (int i = 0; i < N_OSC; i++) {
         oscs[i].phase = RANDOM() * ph_rand;
         drift_acc[i] = synth_random();
@@ -139,6 +167,30 @@ void OSC_PARAM(uint16_t index, uint16_t value)
             n_oscs = 11;
         else if (value == 3)
             n_oscs = 13;
+    }
+    break;
+  case USER_PARAM__Gate_pttrn__idx:
+    {
+        if (value == 0)
+            GATE_PATTERN(1, 1, 1, 1, 1, 1)
+        else if (value == 1)
+            GATE_PATTERN(1, 0, 1, 0, 1, 0)
+        else if (value == 2)
+            GATE_PATTERN(1, 1, 0, 1, 1, 0)
+        else if (value == 3)
+            GATE_PATTERN(1, 1, 0, 1, 0, 0)
+        else if (value == 4)
+            GATE_PATTERN(1, 0, 1, 1, 0, 0)
+        else if (value == 5)
+            GATE_PATTERN(1, 0, 0, 1, 1, 0)
+        else if (value == 6)
+            GATE_PATTERN(1, 1, 1, 0, 1, 0)
+    }
+    break;
+  case USER_PARAM__HPF_cutoff__idx:
+    {
+        init_hp_filter(&hpf, value * 15, k_samplerate);
+        hpf_enabled = value ? 1 : 0;
     }
     break;
   case k_user_osc_param_shape:
