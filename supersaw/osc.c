@@ -23,11 +23,12 @@ static uint8_t first_note_on = 0;
 static uint32_t synth_random_init_value = 1;
 static uint8_t n_oscs = N_OSC;
 
-static uint8_t gate_mode = 1, gate_pattern_i, gate_pattern[6];
-#define GATE_PATTERN(a,b,c,d,e,f) \
-    { gate_pattern[0] = a; gate_pattern[1] = b; gate_pattern[2] = c; \
+static uint8_t gate_mode = 1, gate_pattern_i, gate_pattern[8], gate_pattern_len;
+#define GATE_PATTERN(n,len,a,b,c,d,e,f,g,h) \
+    case n: { gate_pattern[0] = a; gate_pattern[1] = b; gate_pattern[2] = c; \
       gate_pattern[3] = d; gate_pattern[4] = e; gate_pattern[5] = f; \
-    }
+      gate_pattern[6] = g; gate_pattern[7] = h; gate_pattern_len = len; \
+    } break;
 float gate_vol = 1;
 
 struct filter_state hpf = {0, 0, 0, 0};
@@ -91,7 +92,7 @@ void OSC_CYCLE(const user_osc_param_t *const params,
   {
     gate_mode = 1 - gate_mode;
     gate_pattern_i++;
-    if (gate_pattern_i == 6) gate_pattern_i = 0;
+    if (gate_pattern_i >= gate_pattern_len) gate_pattern_i = 0;
     gate_vol = shape_lfo_peak;
     shape_lfo_peak = 0;
   }
@@ -110,7 +111,7 @@ void OSC_NOTEON(const user_osc_param_t *const params)
         first_note_on = 1;
         synth_random_reset(synth_random_init_value + params->pitch);
     }
-    gate_pattern_i = 5;
+    gate_pattern_i = gate_pattern_len - 1;
     gate_mode = 1;
     for (int i = 0; i < N_OSC; i++) {
         oscs[i].phase = RANDOM() * ph_rand;
@@ -171,20 +172,81 @@ void OSC_PARAM(uint16_t index, uint16_t value)
     break;
   case USER_PARAM__Gate_pttrn__idx:
     {
-        if (value == 0)
-            GATE_PATTERN(1, 1, 1, 1, 1, 1)
-        else if (value == 1)
-            GATE_PATTERN(1, 0, 1, 0, 1, 0)
-        else if (value == 2)
-            GATE_PATTERN(1, 1, 0, 1, 1, 0)
-        else if (value == 3)
-            GATE_PATTERN(1, 1, 0, 1, 0, 0)
-        else if (value == 4)
-            GATE_PATTERN(1, 0, 1, 1, 0, 0)
-        else if (value == 5)
-            GATE_PATTERN(1, 0, 0, 1, 1, 0)
-        else if (value == 6)
-            GATE_PATTERN(1, 1, 1, 0, 1, 0)
+        switch (value)
+        {
+          GATE_PATTERN(0, 1, 1, 0, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(1, 2, 1, 0, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(2, 3, 1, 1, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(3, 3, 1, 0, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(4, 4, 1, 1, 1, 0, 0, 0, 0, 0)
+          GATE_PATTERN(5, 4, 1, 1, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(6, 4, 1, 0, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(7, 5, 1, 1, 1, 1, 0, 0, 0, 0)
+          GATE_PATTERN(8, 5, 1, 1, 1, 0, 0, 0, 0, 0)
+          GATE_PATTERN(9, 5, 1, 1, 0, 1, 0, 0, 0, 0)
+          GATE_PATTERN(10, 5, 1, 1, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(11, 5, 1, 0, 1, 0, 0, 0, 0, 0)
+          GATE_PATTERN(12, 5, 1, 0, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(13, 6, 1, 1, 1, 1, 1, 0, 0, 0)
+          GATE_PATTERN(14, 6, 1, 1, 1, 1, 0, 0, 0, 0)
+          GATE_PATTERN(15, 6, 1, 1, 1, 0, 1, 0, 0, 0)
+          GATE_PATTERN(16, 6, 1, 1, 1, 0, 0, 0, 0, 0)
+          GATE_PATTERN(17, 6, 1, 1, 0, 1, 0, 0, 0, 0)
+          GATE_PATTERN(18, 6, 1, 1, 0, 0, 1, 0, 0, 0)
+          GATE_PATTERN(19, 6, 1, 1, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(20, 6, 1, 0, 1, 0, 0, 0, 0, 0)
+          GATE_PATTERN(21, 6, 1, 0, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(22, 7, 1, 1, 1, 1, 1, 1, 0, 0)
+          GATE_PATTERN(23, 7, 1, 1, 1, 1, 1, 0, 0, 0)
+          GATE_PATTERN(24, 7, 1, 1, 1, 1, 0, 1, 0, 0)
+          GATE_PATTERN(25, 7, 1, 1, 1, 1, 0, 0, 0, 0)
+          GATE_PATTERN(26, 7, 1, 1, 1, 0, 1, 1, 0, 0)
+          GATE_PATTERN(27, 7, 1, 1, 1, 0, 1, 0, 0, 0)
+          GATE_PATTERN(28, 7, 1, 1, 1, 0, 0, 1, 0, 0)
+          GATE_PATTERN(29, 7, 1, 1, 1, 0, 0, 0, 0, 0)
+          GATE_PATTERN(30, 7, 1, 1, 0, 1, 1, 0, 0, 0)
+          GATE_PATTERN(31, 7, 1, 1, 0, 1, 0, 1, 0, 0)
+          GATE_PATTERN(32, 7, 1, 1, 0, 1, 0, 0, 0, 0)
+          GATE_PATTERN(33, 7, 1, 1, 0, 0, 1, 0, 0, 0)
+          GATE_PATTERN(34, 7, 1, 1, 0, 0, 0, 1, 0, 0)
+          GATE_PATTERN(35, 7, 1, 1, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(36, 7, 1, 0, 1, 0, 1, 0, 0, 0)
+          GATE_PATTERN(37, 7, 1, 0, 1, 0, 0, 0, 0, 0)
+          GATE_PATTERN(38, 7, 1, 0, 0, 1, 0, 0, 0, 0)
+          GATE_PATTERN(39, 7, 1, 0, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(40, 8, 1, 1, 1, 1, 1, 1, 1, 0)
+          GATE_PATTERN(41, 8, 1, 1, 1, 1, 1, 1, 0, 0)
+          GATE_PATTERN(42, 8, 1, 1, 1, 1, 1, 0, 1, 0)
+          GATE_PATTERN(43, 8, 1, 1, 1, 1, 1, 0, 0, 0)
+          GATE_PATTERN(44, 8, 1, 1, 1, 1, 0, 1, 1, 0)
+          GATE_PATTERN(45, 8, 1, 1, 1, 1, 0, 1, 0, 0)
+          GATE_PATTERN(46, 8, 1, 1, 1, 1, 0, 0, 1, 0)
+          GATE_PATTERN(47, 8, 1, 1, 1, 1, 0, 0, 0, 0)
+          GATE_PATTERN(48, 8, 1, 1, 1, 0, 1, 1, 0, 0)
+          GATE_PATTERN(49, 8, 1, 1, 1, 0, 1, 0, 1, 0)
+          GATE_PATTERN(50, 8, 1, 1, 1, 0, 1, 0, 0, 0)
+          GATE_PATTERN(51, 8, 1, 1, 1, 0, 0, 1, 1, 0)
+          GATE_PATTERN(52, 8, 1, 1, 1, 0, 0, 1, 0, 0)
+          GATE_PATTERN(53, 8, 1, 1, 1, 0, 0, 0, 1, 0)
+          GATE_PATTERN(54, 8, 1, 1, 1, 0, 0, 0, 0, 0)
+          GATE_PATTERN(55, 8, 1, 1, 0, 1, 1, 0, 1, 0)
+          GATE_PATTERN(56, 8, 1, 1, 0, 1, 1, 0, 0, 0)
+          GATE_PATTERN(57, 8, 1, 1, 0, 1, 0, 1, 0, 0)
+          GATE_PATTERN(58, 8, 1, 1, 0, 1, 0, 0, 1, 0)
+          GATE_PATTERN(59, 8, 1, 1, 0, 1, 0, 0, 0, 0)
+          GATE_PATTERN(60, 8, 1, 1, 0, 0, 1, 0, 1, 0)
+          GATE_PATTERN(61, 8, 1, 1, 0, 0, 1, 0, 0, 0)
+          GATE_PATTERN(62, 8, 1, 1, 0, 0, 0, 1, 0, 0)
+          GATE_PATTERN(63, 8, 1, 1, 0, 0, 0, 0, 1, 0)
+          GATE_PATTERN(64, 8, 1, 1, 0, 0, 0, 0, 0, 0)
+          GATE_PATTERN(65, 8, 1, 0, 1, 0, 1, 0, 0, 0)
+          GATE_PATTERN(66, 8, 1, 0, 1, 0, 0, 1, 0, 0)
+          GATE_PATTERN(67, 8, 1, 0, 1, 0, 0, 0, 0, 0)
+          GATE_PATTERN(68, 8, 1, 0, 0, 1, 0, 0, 0, 0)
+          GATE_PATTERN(69, 8, 1, 0, 0, 0, 0, 0, 0, 0)
+        }
+        gate_pattern_i = gate_pattern_len - 1;
+        gate_mode = 1;
     }
     break;
   case USER_PARAM__HPF_cutoff__idx:

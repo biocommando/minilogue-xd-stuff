@@ -17,10 +17,10 @@
 #define USER_PARAM__Attenuation__max 100
 
 // Gate pttrn
-// Range: 0 to 6 
+// Range: 0 to 69 
 #define USER_PARAM__Gate_pttrn__idx k_user_osc_param_id3
 #define USER_PARAM__Gate_pttrn__min 0
-#define USER_PARAM__Gate_pttrn__max 6
+#define USER_PARAM__Gate_pttrn__max 69
 
 // Amp dist
 // Range: 0 to 100 %
