@@ -10,39 +10,39 @@
         "num_param": 6,
         "params": [
             [
-                "Waveform",
+                "O1 Waveform",
                 0,
                 4,
                 ""
             ],
             [
-                "Base atten",
+                "O1 Atten",
                 0,
                 100,
                 "%"
             ],
             [
-                "-2 oct mix",
+                "O2 Mix",
                 0,
                 100,
                 "%"
             ],
             [
-                "-1 oct mix",
+                "O2 Waveform",
                 0,
-                100,
-                "%"
+                4,
+                ""
             ],
             [
-                "+1 oct mix",
+                "O2 Octave",
                 0,
-                100,
-                "%"
+                4,
+                ""
             ],
             [
-                "+2 oct mix",
+                "O2 Detune",
                 0,
-                100,
+                99,
                 "%"
             ]
         ]
