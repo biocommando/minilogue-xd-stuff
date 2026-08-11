@@ -1,4 +1,4 @@
-﻿#include "userosc.h"
+#include "userosc.h"
 #include "basic_oscillator.h"
 #include "waveforms.h"
 #include "waveform_random_orders.h"
