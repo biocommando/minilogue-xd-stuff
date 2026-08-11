@@ -25,8 +25,8 @@ typedef struct
 /*
  * Proceeds the state by one sample. Get the signal amplitude value using the SimpleOscillator_getValue function.
  */
-void SimpleOscillator_calculateNext(SimpleOscillator *so);
+void SimpleOscillator_calculateNext(SimpleOscillator * so);
 /*
  * Get current oscillator signal value for the given oscillator type.
  */
-float SimpleOscillator_getValue(SimpleOscillator *so, enum OscType oscType);
+float SimpleOscillator_getValue(SimpleOscillator * so, enum OscType oscType);

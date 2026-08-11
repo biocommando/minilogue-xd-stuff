@@ -6,11 +6,20 @@ static void triggerStage(AdsrEnvelope *env, int stage)
     EnvelopeStage_reset(&env->stages[stage]);
 }
 
-float AdsrEnvelope_getSustain(AdsrEnvelope *env) { return env->sustain; }
+float AdsrEnvelope_getSustain(AdsrEnvelope *env)
+{
+    return env->sustain;
+}
 
-void AdsrEnvelope_setCycleOnOff(AdsrEnvelope *env, int on) { env->cycleAttackDecay = on; }
+void AdsrEnvelope_setCycleOnOff(AdsrEnvelope *env, int on)
+{
+    env->cycleAttackDecay = on;
+}
 
-int AdsrEnvelope_getReleaseStage(AdsrEnvelope *env) { return env->releaseStage; }
+int AdsrEnvelope_getReleaseStage(AdsrEnvelope *env)
+{
+    return env->releaseStage;
+}
 
 void init_AdsrEnvelope(AdsrEnvelope *env)
 {
@@ -43,7 +52,7 @@ void AdsrEnvelope_setSustain(AdsrEnvelope *env, float level)
 void AdsrEnvelope_setRelease(AdsrEnvelope *env, int samples)
 {
     if (samples < 40)
-        samples = 40; // to smoothen the clicking sound when using minimal release
+        samples = 40;           // to smoothen the clicking sound when using minimal release
     EnvelopeStage_setLength(&env->stages[3], samples);
 }
 
@@ -60,20 +69,20 @@ void AdsrEnvelope_calculateNext(AdsrEnvelope *env)
         float ratio = EnvelopeStage_getRatio(current);
         switch (env->stage)
         {
-        case 0:
-            env->envelope = ratio;
-            break;
-        case 1:
-            env->envelope = 1 - (1 - env->sustain) * ratio;
-            break;
-        case 2:
-            env->envelope = env->sustain;
-            break;
-        case 3:
-            env->envelope = env->releaseLevel * (1 - ratio);
-            break;
-        default:
-            break;
+            case 0:
+                env->envelope = ratio;
+                break;
+            case 1:
+                env->envelope = 1 - (1 - env->sustain) * ratio;
+                break;
+            case 2:
+                env->envelope = env->sustain;
+                break;
+            case 3:
+                env->envelope = env->releaseLevel * (1 - ratio);
+                break;
+            default:
+                break;
         }
     }
     else if (env->stage < 3)

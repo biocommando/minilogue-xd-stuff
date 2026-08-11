@@ -22,37 +22,37 @@ typedef struct
 /*
  * Initializes the filter structure with the sample rate (Hz).
  */
-void init_MicrotrackerMoog(MicrotrackerMoog *mm, float sampleRate);
+void init_MicrotrackerMoog(MicrotrackerMoog * mm, float sampleRate);
 
 /*
  * Proceeds the filter effect state by one sample. The input signal should be
  * fed to this function sample by sample and the output signal is returned from
  * this function sample by sample.
  */
-float MicrotrackerMoog_calculate(MicrotrackerMoog *mm, float x);
+float MicrotrackerMoog_calculate(MicrotrackerMoog * mm, float x);
 
 /*
  * Set the resonance parameter (range 0-1).
  */
-void MicrotrackerMoog_setResonance(MicrotrackerMoog *mm, float r);
+void MicrotrackerMoog_setResonance(MicrotrackerMoog * mm, float r);
 
 /*
  * Set the filter cutoff parameter (range 0-1).
  */
-void MicrotrackerMoog_setCutoff(MicrotrackerMoog *mm, float c);
+void MicrotrackerMoog_setCutoff(MicrotrackerMoog * mm, float c);
 
 /*
  * Set cutoff modulation value. The modulation value is added to cutoff parameter when calculating
  * the cutoff coefficient.
  */
-void MicrotrackerMoog_setModulation(MicrotrackerMoog *mm, float m);
+void MicrotrackerMoog_setModulation(MicrotrackerMoog * mm, float m);
 
 /*
  * Resets the filter delay line to 0.
  */
-void MicrotrackerMoog_reset(MicrotrackerMoog *mm);
+void MicrotrackerMoog_reset(MicrotrackerMoog * mm);
 
 /*
  * Sets the sample rate in Hz.
  */
-void MicrotrackerMoog_setSamplerate(MicrotrackerMoog *mm, int sr);
+void MicrotrackerMoog_setSamplerate(MicrotrackerMoog * mm, int sr);

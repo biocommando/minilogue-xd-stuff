@@ -10,7 +10,7 @@ inline static float fast_tanh(float x)
 static inline void calculateCutoff(MicrotrackerMoog *mm)
 {
     mm->coCalc = mm->cutoff + mm->cutmod;
-    mm->coCalc = mm->coCalc * 44100 / mm->sampleRate; // 6.28318530717 * 1000 / sampleRate;
+    mm->coCalc = mm->coCalc * 44100 / mm->sampleRate;   // 6.28318530717 * 1000 / sampleRate;
     mm->coCalc = mm->coCalc > 1 ? 1 : (mm->coCalc < 0 ? 0 : mm->coCalc);
 }
 
@@ -56,7 +56,6 @@ void MicrotrackerMoog_setCutoff(MicrotrackerMoog *mm, float c)
 }
 
 inline void MicrotrackerMoog_setModulation(MicrotrackerMoog *mm, float m)
-
 {
     if (mm->cutmod != m)
     {

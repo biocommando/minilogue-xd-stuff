@@ -19,26 +19,26 @@ typedef struct
 /*
  * Sets the stage length in samples.
  */
-void EnvelopeStage_setLength(EnvelopeStage *es, int samples);
+void EnvelopeStage_setLength(EnvelopeStage * es, int samples);
 /*
  * Proceeds the stage state by one sample.
  */
-void EnvelopeStage_calcuateNext(EnvelopeStage *es);
+void EnvelopeStage_calcuateNext(EnvelopeStage * es);
 /*
  * Returns 1 if the stage still continues according to the phase counter, 0 otherwise.
  */
-int EnvelopeStage_hasNext(EnvelopeStage *es);
+int EnvelopeStage_hasNext(EnvelopeStage * es);
 /*
  * Getter for ratio.
  */
-float EnvelopeStage_getRatio(EnvelopeStage *es);
+float EnvelopeStage_getRatio(EnvelopeStage * es);
 /*
  * Resets the envelope stage to the beginning of the stage.
  */
-void EnvelopeStage_reset(EnvelopeStage *es);
+void EnvelopeStage_reset(EnvelopeStage * es);
 /*
  * Initializes an envelope stage. The parameter hasLength determines
  * if the stage is infinitely long (e.g. a sustain stage) or if it
  * has an end.
  */
-void init_EnvelopeStage(EnvelopeStage *es, int hasLength);
+void init_EnvelopeStage(EnvelopeStage * es, int hasLength);

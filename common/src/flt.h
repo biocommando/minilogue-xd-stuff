@@ -8,9 +8,9 @@ struct filter_state
 #endif
     float state0
 #ifndef FLT_NO_HPF
-    ,state1
+    , state1
 #endif
-;
+    ;
 };
 
 void init_filter(struct filter_state *st, float cutoff, float sample_rate);

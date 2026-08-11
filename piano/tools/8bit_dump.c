@@ -28,14 +28,14 @@ int main(int argc, char **argv)
         free_wav_file(&in_wav);
         return -1;
     }
-    
+
     fprintf(f_out, "#include \"dataoscsrc.h\"\n// from file %s\n\n", argv[arg_input]);
     fprintf(f_out, "static const int8_t _data[%d] = {\n   ", in_wav.num_frames - trim_end);
 
     float abs_max = 0;
     for (int i = 0; i < in_wav.num_frames; i++)
     {
-        float samples[2] = {0, 0};
+        float samples[2] = { 0, 0 };
         wav_get_normalized(&in_wav, i, samples);
         abs_max = fabs(samples[0]) > abs_max ? fabs(samples[0]) : abs_max;
     }
@@ -44,8 +44,8 @@ int main(int argc, char **argv)
     unsigned length = 0;
     for (int i = trim_start; i < in_wav.num_frames - trim_end; i++)
     {
-        float samples[2] = {0, 0};
-        wav_get_normalized(&in_wav, (unsigned)i, samples);
+        float samples[2] = { 0, 0 };
+        wav_get_normalized(&in_wav, (unsigned) i, samples);
         const char c = samples[0] * to_char_conv_f;
         fprintf(f_out, "%3d,", c);
         if (i % 40 == 39)
@@ -67,7 +67,9 @@ int main(int argc, char **argv)
         printf("Redundant %d zeroes at end\n", zero);
     fprintf(f_out, "\n};\n");
 
-    fprintf(f_out, "const int8_t *get_waveform(uint32_t *sz, uint32_t *sr)\n{\n    *sz = sizeof(_data);\n    *sr = %u;\n    return _data;\n}", in_wav.sample_rate);
+    fprintf(f_out,
+            "const int8_t *get_waveform(uint32_t *sz, uint32_t *sr)\n{\n    *sz = sizeof(_data);\n    *sr = %u;\n    return _data;\n}",
+            in_wav.sample_rate);
 
     free_wav_file(&in_wav);
     fclose(f_out);

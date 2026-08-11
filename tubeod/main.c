@@ -10,13 +10,13 @@ static AsymComprParams input_compr, output_compr;
 
 void MODFX_INIT(uint32_t platform, uint32_t api)
 {
-    (void)platform;
-    (void)api;
+    (void) platform;
+    (void) api;
     input_compr.threshold0 = 0.6;
     input_compr.ratio0 = 0.7;
     input_compr.threshold1 = -0.7;
     input_compr.ratio1 = 0.6;
-    
+
     output_compr.threshold0 = 0.9;
     output_compr.ratio0 = 0.8;
     output_compr.threshold1 = -0.8;
@@ -26,7 +26,7 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
 __fast_inline float fastsqrt(float input)
 {
     // Square root approximation using Halley's method
-	float xn = input < 0.1 ? 0.056 + 2.81 * input : 0.331 + 0.4173 * input;
+    float xn = input < 0.1 ? 0.056 + 2.81 * input : 0.331 + 0.4173 * input;
     for (int i = 0; i < 2; i++)
     {
         const float xn2 = xn * xn;
@@ -50,16 +50,14 @@ static inline float process_one_sample(float input)
     return s;
 }
 
-void MODFX_PROCESS(const float *main_xn, float *main_yn,
-                   const float *sub_xn, float *sub_yn,
-                   uint32_t frames)
+void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, float *sub_yn, uint32_t frames)
 {
-    (void)sub_xn;
-    (void)sub_yn;
+    (void) sub_xn;
+    (void) sub_yn;
 
-    const float *__restrict x = (const float *)main_xn;
-    float *__restrict y = (float *)main_yn;
-    
+    const float *__restrict x = (const float *) main_xn;
+    float *__restrict y = (float *) main_yn;
+
     int this_frame_silent = next_frame_silent;
     next_frame_silent = 1;
     for (uint32_t i = 0; i < frames; i++)

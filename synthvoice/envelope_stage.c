@@ -23,7 +23,7 @@ inline void EnvelopeStage_calcuateNext(EnvelopeStage *es)
     }
     else
     {
-        es->ratio = es->phase / (float)es->length;
+        es->ratio = es->phase / (float) es->length;
     }
 }
 

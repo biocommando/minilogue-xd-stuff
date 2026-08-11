@@ -11,8 +11,8 @@ static struct filter_state tone_filters[2], downsampling_filters[2];
 
 void MODFX_INIT(uint32_t platform, uint32_t api)
 {
-    (void)platform;
-    (void)api;
+    (void) platform;
+    (void) api;
     const float cut_param = 0.5 / 2;
     const float cutoff = (cut_param * cut_param) * 0.5 * SAMPLERATE;
     for (int i = 0; i < 2; i++)
@@ -28,42 +28,40 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
 static inline float fuzz(const float input)
 {
     const float gate = 0.05;
-	float i = input * gain;
-	float gated = i > gate ? 1 : -1;
-	return i * blend_inv + gated * blend;
+    float i = input * gain;
+    float gated = i > gate ? 1 : -1;
+    return i * blend_inv + gated * blend;
 }
 
 static inline float process_one_sample(float input, int channel)
 {
-	float out = fuzz(input);
-	out = out > 1 ? 1 : out;
-	out = out < -1 ? -1 : out;
+    float out = fuzz(input);
+    out = out > 1 ? 1 : out;
+    out = out < -1 ? -1 : out;
     out = process_filter(&tone_filters[channel], out);
-	return out;
+    return out;
 }
 
 static inline float fuzz0()
 {
-	const float gated = -1;
-	return gated * blend;
+    const float gated = -1;
+    return gated * blend;
 }
 
 static inline float process_one_sample0(int channel)
 {
-	const float out = fuzz0();
+    const float out = fuzz0();
     return process_filter(&tone_filters[channel], out);
 }
 
-void MODFX_PROCESS(const float *main_xn, float *main_yn,
-                   const float *sub_xn, float *sub_yn,
-                   uint32_t frames)
+void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, float *sub_yn, uint32_t frames)
 {
-    (void)sub_xn;
-    (void)sub_yn;
+    (void) sub_xn;
+    (void) sub_yn;
 
-    const float *__restrict x = (const float *)main_xn;
-    float *__restrict y = (float *)main_yn;
-    
+    const float *__restrict x = (const float *) main_xn;
+    float *__restrict y = (float *) main_yn;
+
     for (uint32_t i = 0; i < frames; i++)
     {
         for (int ch = 0; ch < 2; ch++)

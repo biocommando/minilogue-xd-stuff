@@ -194,7 +194,7 @@ static void render_sound(Params *p)
     }
     if (write_wav_file(p->fn, &wav) != 0)
         puts("Writing output file failed");
-    free_wav_file(&wav);    
+    free_wav_file(&wav);
 }
 
 int main(int argc, char **argv)

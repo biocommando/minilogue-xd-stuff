@@ -9,37 +9,37 @@
 #define N_OSC 13
 
 COMPCLIP(compress, 0.85, 0.1, 0.99)
+     static SimpleOscillator oscs[N_OSC];
+     static float orig_freqs[N_OSC];
+     static float osc_vol[N_OSC];
 
-static SimpleOscillator oscs[N_OSC];
-static float orig_freqs[N_OSC];
-static float osc_vol[N_OSC];
+     static float drift_p = 0;
+     static uint32_t drift_acc[N_OSC];
 
-static float drift_p = 0;
-static uint32_t drift_acc[N_OSC];
+     static float ph_rand = 0;
 
-static float ph_rand = 0;
+     static uint8_t first_note_on = 0;
+     static uint32_t synth_random_init_value = 1;
+     static uint8_t n_oscs = N_OSC;
 
-static uint8_t first_note_on = 0;
-static uint32_t synth_random_init_value = 1;
-static uint8_t n_oscs = N_OSC;
-
-static uint8_t gate_mode = 1, gate_pattern_i, gate_pattern[8], gate_pattern_len;
+     static uint8_t gate_mode = 1, gate_pattern_i, gate_pattern[8], gate_pattern_len;
 #define GATE_PATTERN(n,len,a,b,c,d,e,f,g,h) \
     case n: { gate_pattern[0] = a; gate_pattern[1] = b; gate_pattern[2] = c; \
       gate_pattern[3] = d; gate_pattern[4] = e; gate_pattern[5] = f; \
       gate_pattern[6] = g; gate_pattern[7] = h; gate_pattern_len = len; \
     } break;
-float gate_vol = 1;
+     float gate_vol = 1;
 
-struct filter_state hpf = {0, 0, 0, 0};
+     struct filter_state hpf = { 0, 0, 0, 0 };
+
 static uint8_t hpf_enabled = 0;
 
 #define RANDOM() ((synth_random()&0xFFFFF)/(float)0xFFFFF)
 
 void OSC_INIT(uint32_t platform, uint32_t api)
 {
-    (void)platform;
-    (void)api;
+    (void) platform;
+    (void) api;
     for (int i = 0; i < N_OSC; i++)
     {
         oscs[i].phase = oscs[i].frequency = 0;
@@ -75,33 +75,32 @@ __fast_inline float calculate_supersaw()
 }
 
 float shape_lfo_peak = 0;
-void OSC_CYCLE(const user_osc_param_t *const params,
-               int32_t *yn,
-               const uint32_t frames)
+void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t frames)
 {
-  synth_random_init_value += frames;
-  update_inc(params, frames);
+    synth_random_init_value += frames;
+    update_inc(params, frames);
 
-  q31_t *__restrict y = (q31_t *)yn;
-  const q31_t *y_e = y + frames;
+    q31_t *__restrict y = (q31_t *) yn;
+    const q31_t *y_e = y + frames;
 
-  const float shape_lfo = q31_to_f32(params->shape_lfo);
-  if (shape_lfo > shape_lfo_peak)
-    shape_lfo_peak = shape_lfo;
-  if ((gate_mode && shape_lfo > 0.01) || (!gate_mode && shape_lfo < -0.01))
-  {
-    gate_mode = 1 - gate_mode;
-    gate_pattern_i++;
-    if (gate_pattern_i >= gate_pattern_len) gate_pattern_i = 0;
-    gate_vol = shape_lfo_peak;
-    shape_lfo_peak = 0;
-  }
-      
-  float vol = gate_pattern[gate_pattern_i] ? 1 : gate_vol;
-  for (; y != y_e;)
-  {
-    *(y++) = f32_to_q31(calculate_supersaw() * vol);
-  }
+    const float shape_lfo = q31_to_f32(params->shape_lfo);
+    if (shape_lfo > shape_lfo_peak)
+        shape_lfo_peak = shape_lfo;
+    if ((gate_mode && shape_lfo > 0.01) || (!gate_mode && shape_lfo < -0.01))
+    {
+        gate_mode = 1 - gate_mode;
+        gate_pattern_i++;
+        if (gate_pattern_i >= gate_pattern_len)
+            gate_pattern_i = 0;
+        gate_vol = shape_lfo_peak;
+        shape_lfo_peak = 0;
+    }
+
+    float vol = gate_pattern[gate_pattern_i] ? 1 : gate_vol;
+    for (; y != y_e;)
+    {
+        *(y++) = f32_to_q31(calculate_supersaw() * vol);
+    }
 }
 
 void OSC_NOTEON(const user_osc_param_t *const params)
@@ -113,7 +112,8 @@ void OSC_NOTEON(const user_osc_param_t *const params)
     }
     gate_pattern_i = gate_pattern_len - 1;
     gate_mode = 1;
-    for (int i = 0; i < N_OSC; i++) {
+    for (int i = 0; i < N_OSC; i++)
+    {
         oscs[i].phase = RANDOM() * ph_rand;
         drift_acc[i] = synth_random();
     }
@@ -121,7 +121,7 @@ void OSC_NOTEON(const user_osc_param_t *const params)
 
 void OSC_NOTEOFF(const user_osc_param_t *const params)
 {
-    (void)params;
+    (void) params;
 }
 
 static float initial_vol = 0.5, amp_dist;
@@ -139,138 +139,136 @@ static void calc_volume()
 
 void OSC_PARAM(uint16_t index, uint16_t value)
 {
-  switch (index)
-  {
-  case USER_PARAM__Amp_dist__idx:
+    switch (index)
     {
-        amp_dist = 1 - value / 100.0;
-        calc_volume();
-    }
-    break;
-  case USER_PARAM__Attenuation__idx:
-    {
-        initial_vol = 0.5 - 0.45 * value / 100.0;
-        calc_volume();
-    }
-    break;
-  case USER_PARAM__Ph_rand_mod__idx:
-    {
-        ph_rand = 1 - value / 100.0;
-    }
-    break;
-  case USER_PARAM__Num_oscs__idx:
-    {
-        if (value == 0)
-            n_oscs = 7;
-        else if (value == 1)
-            n_oscs = 9;
-        else if (value == 2)
-            n_oscs = 11;
-        else if (value == 3)
-            n_oscs = 13;
-    }
-    break;
-  case USER_PARAM__Gate_pttrn__idx:
-    {
-        switch (value)
+        case USER_PARAM__Amp_dist__idx:
         {
-          GATE_PATTERN(0, 1, 1, 0, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(1, 2, 1, 0, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(2, 3, 1, 1, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(3, 3, 1, 0, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(4, 4, 1, 1, 1, 0, 0, 0, 0, 0)
-          GATE_PATTERN(5, 4, 1, 1, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(6, 4, 1, 0, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(7, 5, 1, 1, 1, 1, 0, 0, 0, 0)
-          GATE_PATTERN(8, 5, 1, 1, 1, 0, 0, 0, 0, 0)
-          GATE_PATTERN(9, 5, 1, 1, 0, 1, 0, 0, 0, 0)
-          GATE_PATTERN(10, 5, 1, 1, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(11, 5, 1, 0, 1, 0, 0, 0, 0, 0)
-          GATE_PATTERN(12, 5, 1, 0, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(13, 6, 1, 1, 1, 1, 1, 0, 0, 0)
-          GATE_PATTERN(14, 6, 1, 1, 1, 1, 0, 0, 0, 0)
-          GATE_PATTERN(15, 6, 1, 1, 1, 0, 1, 0, 0, 0)
-          GATE_PATTERN(16, 6, 1, 1, 1, 0, 0, 0, 0, 0)
-          GATE_PATTERN(17, 6, 1, 1, 0, 1, 0, 0, 0, 0)
-          GATE_PATTERN(18, 6, 1, 1, 0, 0, 1, 0, 0, 0)
-          GATE_PATTERN(19, 6, 1, 1, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(20, 6, 1, 0, 1, 0, 0, 0, 0, 0)
-          GATE_PATTERN(21, 6, 1, 0, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(22, 7, 1, 1, 1, 1, 1, 1, 0, 0)
-          GATE_PATTERN(23, 7, 1, 1, 1, 1, 1, 0, 0, 0)
-          GATE_PATTERN(24, 7, 1, 1, 1, 1, 0, 1, 0, 0)
-          GATE_PATTERN(25, 7, 1, 1, 1, 1, 0, 0, 0, 0)
-          GATE_PATTERN(26, 7, 1, 1, 1, 0, 1, 1, 0, 0)
-          GATE_PATTERN(27, 7, 1, 1, 1, 0, 1, 0, 0, 0)
-          GATE_PATTERN(28, 7, 1, 1, 1, 0, 0, 1, 0, 0)
-          GATE_PATTERN(29, 7, 1, 1, 1, 0, 0, 0, 0, 0)
-          GATE_PATTERN(30, 7, 1, 1, 0, 1, 1, 0, 0, 0)
-          GATE_PATTERN(31, 7, 1, 1, 0, 1, 0, 1, 0, 0)
-          GATE_PATTERN(32, 7, 1, 1, 0, 1, 0, 0, 0, 0)
-          GATE_PATTERN(33, 7, 1, 1, 0, 0, 1, 0, 0, 0)
-          GATE_PATTERN(34, 7, 1, 1, 0, 0, 0, 1, 0, 0)
-          GATE_PATTERN(35, 7, 1, 1, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(36, 7, 1, 0, 1, 0, 1, 0, 0, 0)
-          GATE_PATTERN(37, 7, 1, 0, 1, 0, 0, 0, 0, 0)
-          GATE_PATTERN(38, 7, 1, 0, 0, 1, 0, 0, 0, 0)
-          GATE_PATTERN(39, 7, 1, 0, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(40, 8, 1, 1, 1, 1, 1, 1, 1, 0)
-          GATE_PATTERN(41, 8, 1, 1, 1, 1, 1, 1, 0, 0)
-          GATE_PATTERN(42, 8, 1, 1, 1, 1, 1, 0, 1, 0)
-          GATE_PATTERN(43, 8, 1, 1, 1, 1, 1, 0, 0, 0)
-          GATE_PATTERN(44, 8, 1, 1, 1, 1, 0, 1, 1, 0)
-          GATE_PATTERN(45, 8, 1, 1, 1, 1, 0, 1, 0, 0)
-          GATE_PATTERN(46, 8, 1, 1, 1, 1, 0, 0, 1, 0)
-          GATE_PATTERN(47, 8, 1, 1, 1, 1, 0, 0, 0, 0)
-          GATE_PATTERN(48, 8, 1, 1, 1, 0, 1, 1, 0, 0)
-          GATE_PATTERN(49, 8, 1, 1, 1, 0, 1, 0, 1, 0)
-          GATE_PATTERN(50, 8, 1, 1, 1, 0, 1, 0, 0, 0)
-          GATE_PATTERN(51, 8, 1, 1, 1, 0, 0, 1, 1, 0)
-          GATE_PATTERN(52, 8, 1, 1, 1, 0, 0, 1, 0, 0)
-          GATE_PATTERN(53, 8, 1, 1, 1, 0, 0, 0, 1, 0)
-          GATE_PATTERN(54, 8, 1, 1, 1, 0, 0, 0, 0, 0)
-          GATE_PATTERN(55, 8, 1, 1, 0, 1, 1, 0, 1, 0)
-          GATE_PATTERN(56, 8, 1, 1, 0, 1, 1, 0, 0, 0)
-          GATE_PATTERN(57, 8, 1, 1, 0, 1, 0, 1, 0, 0)
-          GATE_PATTERN(58, 8, 1, 1, 0, 1, 0, 0, 1, 0)
-          GATE_PATTERN(59, 8, 1, 1, 0, 1, 0, 0, 0, 0)
-          GATE_PATTERN(60, 8, 1, 1, 0, 0, 1, 0, 1, 0)
-          GATE_PATTERN(61, 8, 1, 1, 0, 0, 1, 0, 0, 0)
-          GATE_PATTERN(62, 8, 1, 1, 0, 0, 0, 1, 0, 0)
-          GATE_PATTERN(63, 8, 1, 1, 0, 0, 0, 0, 1, 0)
-          GATE_PATTERN(64, 8, 1, 1, 0, 0, 0, 0, 0, 0)
-          GATE_PATTERN(65, 8, 1, 0, 1, 0, 1, 0, 0, 0)
-          GATE_PATTERN(66, 8, 1, 0, 1, 0, 0, 1, 0, 0)
-          GATE_PATTERN(67, 8, 1, 0, 1, 0, 0, 0, 0, 0)
-          GATE_PATTERN(68, 8, 1, 0, 0, 1, 0, 0, 0, 0)
-          GATE_PATTERN(69, 8, 1, 0, 0, 0, 0, 0, 0, 0)
+            amp_dist = 1 - value / 100.0;
+            calc_volume();
         }
-        gate_pattern_i = gate_pattern_len - 1;
-        gate_mode = 1;
-    }
-    break;
-  case USER_PARAM__HPF_cutoff__idx:
-    {
-        init_hp_filter(&hpf, value * 15, k_samplerate);
-        hpf_enabled = value ? 1 : 0;
-    }
-    break;
-  case k_user_osc_param_shape:
-    {
-        for (int i = 1; i < N_OSC; i++)
+            break;
+        case USER_PARAM__Attenuation__idx:
         {
-            uint16_t spread = value * ((i+1)/2/(float)((N_OSC-1)/2));
-            float f = get_semitone_ratio(spread);
-            if (i & 1)
-                f = 1/f;
-            orig_freqs[i] = f;
+            initial_vol = 0.5 - 0.45 * value / 100.0;
+            calc_volume();
         }
+            break;
+        case USER_PARAM__Ph_rand_mod__idx:
+        {
+            ph_rand = 1 - value / 100.0;
+        }
+            break;
+        case USER_PARAM__Num_oscs__idx:
+        {
+            if (value == 0)
+                n_oscs = 7;
+            else if (value == 1)
+                n_oscs = 9;
+            else if (value == 2)
+                n_oscs = 11;
+            else if (value == 3)
+                n_oscs = 13;
+        }
+            break;
+        case USER_PARAM__Gate_pttrn__idx:
+        {
+            switch (value)
+            {
+            GATE_PATTERN(0, 1, 1, 0, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(1, 2, 1, 0, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(2, 3, 1, 1, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(3, 3, 1, 0, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(4, 4, 1, 1, 1, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(5, 4, 1, 1, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(6, 4, 1, 0, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(7, 5, 1, 1, 1, 1, 0, 0, 0, 0)
+                        GATE_PATTERN(8, 5, 1, 1, 1, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(9, 5, 1, 1, 0, 1, 0, 0, 0, 0)
+                        GATE_PATTERN(10, 5, 1, 1, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(11, 5, 1, 0, 1, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(12, 5, 1, 0, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(13, 6, 1, 1, 1, 1, 1, 0, 0, 0)
+                        GATE_PATTERN(14, 6, 1, 1, 1, 1, 0, 0, 0, 0)
+                        GATE_PATTERN(15, 6, 1, 1, 1, 0, 1, 0, 0, 0)
+                        GATE_PATTERN(16, 6, 1, 1, 1, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(17, 6, 1, 1, 0, 1, 0, 0, 0, 0)
+                        GATE_PATTERN(18, 6, 1, 1, 0, 0, 1, 0, 0, 0)
+                        GATE_PATTERN(19, 6, 1, 1, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(20, 6, 1, 0, 1, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(21, 6, 1, 0, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(22, 7, 1, 1, 1, 1, 1, 1, 0, 0)
+                        GATE_PATTERN(23, 7, 1, 1, 1, 1, 1, 0, 0, 0)
+                        GATE_PATTERN(24, 7, 1, 1, 1, 1, 0, 1, 0, 0)
+                        GATE_PATTERN(25, 7, 1, 1, 1, 1, 0, 0, 0, 0)
+                        GATE_PATTERN(26, 7, 1, 1, 1, 0, 1, 1, 0, 0)
+                        GATE_PATTERN(27, 7, 1, 1, 1, 0, 1, 0, 0, 0)
+                        GATE_PATTERN(28, 7, 1, 1, 1, 0, 0, 1, 0, 0)
+                        GATE_PATTERN(29, 7, 1, 1, 1, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(30, 7, 1, 1, 0, 1, 1, 0, 0, 0)
+                        GATE_PATTERN(31, 7, 1, 1, 0, 1, 0, 1, 0, 0)
+                        GATE_PATTERN(32, 7, 1, 1, 0, 1, 0, 0, 0, 0)
+                        GATE_PATTERN(33, 7, 1, 1, 0, 0, 1, 0, 0, 0)
+                        GATE_PATTERN(34, 7, 1, 1, 0, 0, 0, 1, 0, 0)
+                        GATE_PATTERN(35, 7, 1, 1, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(36, 7, 1, 0, 1, 0, 1, 0, 0, 0)
+                        GATE_PATTERN(37, 7, 1, 0, 1, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(38, 7, 1, 0, 0, 1, 0, 0, 0, 0)
+                        GATE_PATTERN(39, 7, 1, 0, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(40, 8, 1, 1, 1, 1, 1, 1, 1, 0)
+                        GATE_PATTERN(41, 8, 1, 1, 1, 1, 1, 1, 0, 0)
+                        GATE_PATTERN(42, 8, 1, 1, 1, 1, 1, 0, 1, 0)
+                        GATE_PATTERN(43, 8, 1, 1, 1, 1, 1, 0, 0, 0)
+                        GATE_PATTERN(44, 8, 1, 1, 1, 1, 0, 1, 1, 0)
+                        GATE_PATTERN(45, 8, 1, 1, 1, 1, 0, 1, 0, 0)
+                        GATE_PATTERN(46, 8, 1, 1, 1, 1, 0, 0, 1, 0)
+                        GATE_PATTERN(47, 8, 1, 1, 1, 1, 0, 0, 0, 0)
+                        GATE_PATTERN(48, 8, 1, 1, 1, 0, 1, 1, 0, 0)
+                        GATE_PATTERN(49, 8, 1, 1, 1, 0, 1, 0, 1, 0)
+                        GATE_PATTERN(50, 8, 1, 1, 1, 0, 1, 0, 0, 0)
+                        GATE_PATTERN(51, 8, 1, 1, 1, 0, 0, 1, 1, 0)
+                        GATE_PATTERN(52, 8, 1, 1, 1, 0, 0, 1, 0, 0)
+                        GATE_PATTERN(53, 8, 1, 1, 1, 0, 0, 0, 1, 0)
+                        GATE_PATTERN(54, 8, 1, 1, 1, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(55, 8, 1, 1, 0, 1, 1, 0, 1, 0)
+                        GATE_PATTERN(56, 8, 1, 1, 0, 1, 1, 0, 0, 0)
+                        GATE_PATTERN(57, 8, 1, 1, 0, 1, 0, 1, 0, 0)
+                        GATE_PATTERN(58, 8, 1, 1, 0, 1, 0, 0, 1, 0)
+                        GATE_PATTERN(59, 8, 1, 1, 0, 1, 0, 0, 0, 0)
+                        GATE_PATTERN(60, 8, 1, 1, 0, 0, 1, 0, 1, 0)
+                        GATE_PATTERN(61, 8, 1, 1, 0, 0, 1, 0, 0, 0)
+                        GATE_PATTERN(62, 8, 1, 1, 0, 0, 0, 1, 0, 0)
+                        GATE_PATTERN(63, 8, 1, 1, 0, 0, 0, 0, 1, 0)
+                        GATE_PATTERN(64, 8, 1, 1, 0, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(65, 8, 1, 0, 1, 0, 1, 0, 0, 0)
+                        GATE_PATTERN(66, 8, 1, 0, 1, 0, 0, 1, 0, 0)
+                        GATE_PATTERN(67, 8, 1, 0, 1, 0, 0, 0, 0, 0)
+                        GATE_PATTERN(68, 8, 1, 0, 0, 1, 0, 0, 0, 0) GATE_PATTERN(69, 8, 1, 0, 0, 0, 0, 0, 0, 0)}
+            gate_pattern_i = gate_pattern_len - 1;
+            gate_mode = 1;
+        }
+            break;
+        case USER_PARAM__HPF_cutoff__idx:
+        {
+            init_hp_filter(&hpf, value * 15, k_samplerate);
+            hpf_enabled = value ? 1 : 0;
+        }
+            break;
+        case k_user_osc_param_shape:
+        {
+            for (int i = 1; i < N_OSC; i++)
+            {
+                uint16_t spread = value * ((i + 1) / 2 / (float) ((N_OSC - 1) / 2));
+                float f = get_semitone_ratio(spread);
+                if (i & 1)
+                    f = 1 / f;
+                orig_freqs[i] = f;
+            }
+        }
+            break;
+        case k_user_osc_param_shiftshape:
+            drift_p = param_val_to_f32(value);
+            break;
+        default:
+            break;
     }
-    break;
-  case k_user_osc_param_shiftshape:
-    drift_p  = param_val_to_f32(value);
-    break;
-  default:
-    break;
-  }
 }

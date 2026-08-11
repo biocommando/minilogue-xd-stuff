@@ -62,42 +62,42 @@ typedef struct
 /*
  * Initializes the structure with the sample rate (Hz).
  */
-void init_BasicOscillator(BasicOscillator *bo, int sampleRate);
+void init_BasicOscillator(BasicOscillator * bo, int sampleRate);
 /*
  * Proceeds the state by one sample. Get the signal amplitude value using the BasicOscillator_getValue* functions.
  */
-void BasicOscillator_calculateNext(BasicOscillator *bo);
+void BasicOscillator_calculateNext(BasicOscillator * bo);
 /*
  * Set wavetable data. BasicOscillator_setWaveTableParams must be called after calling this.
  */
-void BasicOscillator_setWavetable(BasicOscillator *bo, float *wt, int size);
+void BasicOscillator_setWavetable(BasicOscillator * bo, float *wt, int size);
 /*
  * Get current oscillator signal value for the given oscillator type.
  */
-float BasicOscillator_getValue(BasicOscillator *bo, enum OscType oscType);
+float BasicOscillator_getValue(BasicOscillator * bo, enum OscType oscType);
 /*
  * Same as getValue but applies a phase offset before returning the value. Allows using the oscillators for
  * FM synthesis or adding vibrato.
  */
-float BasicOscillator_getValueFm(BasicOscillator *bo, enum OscType oscType, float fmAmount);
+float BasicOscillator_getValueFm(BasicOscillator * bo, enum OscType oscType, float fmAmount);
 /*
  * Sets oscillator frequency as Hz.
  */
-void BasicOscillator_setFrequency(BasicOscillator *bo, float f_Hz);
+void BasicOscillator_setFrequency(BasicOscillator * bo, float f_Hz);
 /*
  * Sets wavetable start position and playback length parameters. Parameters in range 0-1.
  * Position of 0 means the start of the buffer and 1 the end of the buffer.
  * Window of 0 means the same end position as start position and 1 that end position is
  * at the end of the buffer.
  */
-void BasicOscillator_setWaveTableParams(BasicOscillator *bo, float pos, float window);
+void BasicOscillator_setWaveTableParams(BasicOscillator * bo, float pos, float window);
 /*
  * Set sample rate in Hz.
  */
-void BasicOscillator_setSamplerate(BasicOscillator *bo, int rate);
+void BasicOscillator_setSamplerate(BasicOscillator * bo, int rate);
 
 /*
  * Randomizes the phase. The amount parameter should be in range 0-1. The amount parameter
  * limits the initial phase to range 0-amount.
  */
-void BasicOscillator_randomizePhase(BasicOscillator *bo, float rndAmount);
+void BasicOscillator_randomizePhase(BasicOscillator * bo, float rndAmount);

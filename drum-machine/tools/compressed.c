@@ -34,35 +34,30 @@ int main(int argc, char **argv)
     int trim_end = 0;
     if (arg_trim_end >= 0)
         trim_end = atoi(argv[arg_trim_end]);
-    if (argv[arg_mode][0] == 'c') // compress
+    if (argv[arg_mode][0] == 'c')       // compress
     {
         GET_ARG(arg_output, "-o");
         GET_ARG(arg_input, "-i");
-        TRY(compress(argv[arg_output], argv[arg_input], trim_start, trim_end))
-    }
-    if (argv[arg_mode][0] == 'd') // decompress
+    TRY(compress(argv[arg_output], argv[arg_input], trim_start, trim_end))}
+    if (argv[arg_mode][0] == 'd')       // decompress
     {
         GET_ARG(arg_output, "-o");
         GET_ARG(arg_input, "-i");
-        TRY(decompress(argv[arg_output], argv[arg_input]))
-    }
-    if (argv[arg_mode][0] == 'r') // roundtrip
+    TRY(decompress(argv[arg_output], argv[arg_input]))}
+    if (argv[arg_mode][0] == 'r')       // roundtrip
     {
         GET_ARG(arg_output, "-o");
         GET_ARG(arg_input, "-i");
 
         char *bin_out = malloc(strlen(argv[arg_input]) + 1 + 4);
         sprintf(bin_out, "%s.bin", argv[arg_input]);
-        TRY(compress(bin_out, argv[arg_input], trim_start, trim_end))
-        TRY(decompress(argv[arg_output], bin_out))
-    }
-    if (argv[arg_mode][0] == 'C') // code
+    TRY(compress(bin_out, argv[arg_input], trim_start, trim_end)) TRY(decompress(argv[arg_output], bin_out))}
+    if (argv[arg_mode][0] == 'C')       // code
     {
         GET_ARG(arg_output, "-o");
         GET_ARG(arg_input, "-i");
 
-        TRY(decompress_to_c(argv[arg_output], argv[arg_input]))
-    }
+    TRY(decompress_to_c(argv[arg_output], argv[arg_input]))}
     return 0;
 }
 
@@ -81,13 +76,13 @@ def_compress
     int total_length = trimmed_length + trimmed_length % 5;
     fwrite(&total_length, sizeof(total_length), 1, f_out);
     fwrite(&in_wav.sample_rate, sizeof(unsigned), 1, f_out);
-    double inc = trimmed_length / (double)total_length;
+    double inc = trimmed_length / (double) total_length;
     int _i = 0, num_positive = 0;
     char _wbuf[5];
     float abs_max = 0;
     for (int i = 0; i < in_wav.num_frames; i++)
     {
-        float samples[2] = {0, 0};
+        float samples[2] = { 0, 0 };
         wav_get_normalized(&in_wav, i, samples);
         abs_max = fabs(samples[0]) > abs_max ? fabs(samples[0]) : abs_max;
     }
@@ -95,8 +90,8 @@ def_compress
     int zero = 0, non_zero_found = 0;
     for (double i = trim_start; i < in_wav.num_frames - trim_end; i += inc)
     {
-        float samples[2] = {0, 0};
-        wav_get_normalized(&in_wav, (unsigned)i, samples);
+        float samples[2] = { 0, 0 };
+        wav_get_normalized(&in_wav, (unsigned) i, samples);
         _wbuf[_i % 5] = samples[0] * to_char_conv_f;
         if (*samples > 0)
             num_positive++;
@@ -159,7 +154,7 @@ def_decompress
         int sign = _word & 0x8000;
         for (int wi = 0; wi < 5; wi++)
         {
-            float sample = ((int)((_word >> (wi * 3)) & 0x7)) / 7.0;
+            float sample = ((int) ((_word >> (wi * 3)) & 0x7)) / 7.0;
             if (sign)
                 sample = -sample;
             wav_set_normalized(&out_wav, _i, &sample);
