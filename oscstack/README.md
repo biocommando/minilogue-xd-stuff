@@ -11,6 +11,8 @@ User oscillator that has 3 oscillators in the following configuration:
 - Shift + Shape:
     * Noise mix
 
+Shape LFO affects wavetable oscillator wavetable position OR amplitude if any other waveform than wavetable is selected.
+
 #### User parameters
 - 1: Osc1 Waveform:
     * 1 = sawtooth

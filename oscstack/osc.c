@@ -57,8 +57,9 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
             BasicOscillator_calculateNext(&osc[i]);
             out += BasicOscillator_getValue(&osc[i], waveform[i]) * osc_mix[i];
         }
-        out += (float) (synth_random() % 100000) * 0.00001f * noise_mix;
-        out *= 1 - shape_lfo;
+        out += (float) (synth_random() & 0xFFFFF) / (float)0xFFFFF * noise_mix;
+        if (waveform[i] != OSC_WT)
+          out *= 1 - shape_lfo;
 
         *(y++) = f32_to_q31(out);
     }
