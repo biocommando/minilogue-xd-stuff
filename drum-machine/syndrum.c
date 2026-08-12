@@ -176,11 +176,13 @@ static inline void _set_syn_drum_params(const uint8_t *params)
     syn_drum_noise_mix = uint8_to_f(params[SD_NOISE_MIX_IDX]);
     syn_drum_vol_mod = EXP_ENV(uint8_to_f(params[SD_VOL_MOD_IDX]));
     syn_drum_vol = 1;
-    use_hpf = flags & SD_USE_HPF;
-    if (flags & SD_HPF_LOW_FREQ)
-        hpf.factor = 0.8842517205783795;
+    use_hpf = flags & (SD_USE_HPF | SD_HPF_LOW_FREQ);
+    if (flags & (SD_USE_HPF | SD_HPF_LOW_FREQ))
+        hpf.factor = 0.7180302001078813; // 3 kHz
+    else if (flags & SD_HPF_LOW_FREQ)
+        hpf.factor = 0.8842517205783795; // 1 kHz
     else
-        hpf.factor = 0.5600991537930968;
+        hpf.factor = 0.5600991537930968; // 6 kHz
     use_lfo = flags & (SD_USE_LFO | SD_USE_LFO_FAST);
 
     int lfo_freq = 12;

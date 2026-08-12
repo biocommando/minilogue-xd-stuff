@@ -1,8 +1,5 @@
 ## Korg logue SDK: Drum Machine User Oscillator
-A lo-fi TR707ish drum machine user oscillator for the **Korg Minilogue XD** multi-engine, built using the official C/C++ **logue-sdk**.
-
-## Building / binary distribution
-A compiled and tested binary comes with this repository. To build, use the **Minilogue SDK**. To use the same workflow as I, use the legacy building method and place this repository right under `logue-sdk/platform/minilogue-xd`.
+A drum machine user oscillator that has lo-fi samples and synthesized drums.
 
 ## Architecture
 Has 2 drum engines that can be mixed with the shape parameters. One uses lo-fi PCM samples and the other uses a simple synth engine.
@@ -33,7 +30,7 @@ The drum sounds can be played back with different playback speeds (pitch) using 
 - A# = rimshot
 - B = tom
 
-Has overdrive distortion for sound shaping and mix groups for setting drum sample levels.
+Has overdrive distortion for sound shaping and mix groups for setting drum voice levels.
 
 ### Sample playback engine
 Uses a custom raw waveform format that compresses 5 4-bit samples into one 16 bit word.
@@ -61,17 +58,17 @@ The engine consists of a single oscillator with triangle, sawtooth and square wa
 - Noise mix
 - Master volume envelope length
 - Flags:
-    * Use high-pass filter at 6 kHz
-    * Use high-pass filter at 1 kHz (filter settings mutually exclusive)
-    * Use amplitude LFO (25 Hz sawtooth)
+    * Use high-pass filter (2 bits) (off, 1 kHz, 3 kHz, 6 kHz)
+    * Amplitude LFO (2 bits) (Off, 12, 25 or 65 Hz sawtooth)
+    * Make envelopes longer
 
 ### Parameters
 
 #### Shape parameters
 - Shape:
-    * Overdrive gain
+    * Sample playback / synth drums mix. 0% = only samples, 100% = only synth drums.
 - Shift + Shape:
-    * "Humanization", random pitch variations applied on note on event
+    * Overdrive gain
 
 #### User parameters
 - 1: Synth drum engine variation
