@@ -1,31 +1,43 @@
 PROJ_BASE_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[-1]}")/..")
 MANIFEST_TOOL=$PROJ_BASE_PATH/common/scripts/manifest_tool.py
 
+function uuresolve {
+	if [ "$1" == "" ]
+	then
+		touch /tmp/.minilogue-xd-stuff.uuresolve
+		cat /tmp/.minilogue-xd-stuff.uuresolve
+		return 0
+	fi
+	echo $1 > /tmp/.minilogue-xd-stuff.uuresolve
+	echo $1
+}
+
 function uulist {
     find "$PROJ_BASE_PATH"/ -maxdepth 1 -type d -regex ".*/[a-z][^/]*" | grep -Ev ".*/(release.*|common)$" | grep -o "[a-z0-9-]*$"
 }
 
 function uumake {
-    cd "$PROJ_BASE_PATH/$1"
+    proj=$(uuresolve "$1")
+    cd "$PROJ_BASE_PATH/$proj"
     make clean
     make PRE_ALL
     if [ "$?" != "0" ]
     then
-      echo "<<$1>> Make PRE_ALL failed"
+      echo "<<$proj>> Make PRE_ALL failed"
       cd -
       return 1
     fi
     $MANIFEST_TOOL --verify manifest.json --generate-params-header manifest_params.h
     if [ "$?" != "0" ]
     then
-      echo "<<$1>> Manifest JSON invalid"
+      echo "<<$proj>> Manifest JSON invalid"
       cd -
       return 1
     fi
     make
     if [ "$?" != "0" ]
     then
-      echo "<<$1>> Make failed"
+      echo "<<$proj>> Make failed"
       cd -
       return 1
     fi
@@ -42,24 +54,21 @@ function get_proj_manifest_name {
 }
 
 function uudeploy {
-    name=$(get_proj_manifest_name $1)
-    path="$PROJ_BASE_PATH/$1/$name.mnlgxdunit"
+	proj=$(uuresolve "$1")
+    name=$(get_proj_manifest_name $proj)
+    path="$PROJ_BASE_PATH/$proj/$name.mnlgxdunit"
     cp "$path" "$MINILOGUE_STUFF_DEPLOY_DIR"
     echo copied $path to "$MINILOGUE_STUFF_DEPLOY_DIR"
 }
 
 function uudist {
-    name=$(get_proj_manifest_name $1)
-    path="$PROJ_BASE_PATH/$1/$name.mnlgxdunit"
-    path2="$PROJ_BASE_PATH/$1/dist/"
+	proj=$(uuresolve "$1")
+    name=$(get_proj_manifest_name $proj)
+    path="$PROJ_BASE_PATH/$proj/$name.mnlgxdunit"
+    path2="$PROJ_BASE_PATH/$proj/dist/"
     mkdir -p "$path2"
     cp "$path" "$path2"
     echo copied $path to $path2
-}
-
-function uuvers {
-    version=$2
-    $MANIFEST_TOOL $PROJ_BASE_PATH/$1/manifest.json --set-version $version
 }
 
 function uurelease {
@@ -126,8 +135,8 @@ function uuhelp {
     echo "                   and runs make install for the selected project"
     echo "  uudeploy <proj> -- copies the selected project to MINILOGUE_STUFF_DEPLOY_DIR"
     echo "  uudist <proj> -- copies the built binary to dist/"
-    echo "  uuvers <proj> <version> -- sets the manifest.json version"
     echo "  uurelease <version> -- creates release package with the version number"
+    echo "<proj> parameter can be omitted to use the previously used value"
 }
 
 uuhelp
