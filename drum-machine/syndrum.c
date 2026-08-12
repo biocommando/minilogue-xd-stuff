@@ -109,7 +109,7 @@ static const uint8_t syn_drum_params[] = {
     50,                         // osc mix
     255,                        // noise mix
     120,                        // vol mod
-    SD_USE_LFO | SD_USE_HPF | SD_HPF_LOW_FREQ,  // Flags
+    SD_USE_LFO | SD_HPF_LOW_FREQ,  // Flags
     // hhc
     0,                          // freq
     0,                          // pitch mod
@@ -144,7 +144,7 @@ static const uint8_t syn_drum_params[] = {
     0,                          // osc mix
     255,                        // noise mix
     210,                        // vol mod
-    SD_USE_HPF | SD_HPF_LOW_FREQ,       // Flags
+    SD_HPF_LOW_FREQ,            // Flags
     // rim
     SD_PACK_FREQ_WF(OSC_SQUARE, 1),     // freq
     0,                          // pitch mod
@@ -265,10 +265,14 @@ void read_params(FILE *f, const char *section)
             params[SD_VOL_MOD_IDX] = atoi(val);
         else if (!strcmp("flags", cmd) && !strcmp("SD_USE_HPF", val))
             params[SD_FLAGS_IDX] |= SD_USE_HPF;
-        else if (!strcmp("flags", cmd) && !strcmp("SD_USE_LFO", val))
-            params[SD_FLAGS_IDX] |= SD_USE_LFO;
         else if (!strcmp("flags", cmd) && !strcmp("SD_HPF_LOW_FREQ", val))
             params[SD_FLAGS_IDX] |= SD_HPF_LOW_FREQ;
+        else if (!strcmp("flags", cmd) && !strcmp("SD_USE_LFO", val))
+            params[SD_FLAGS_IDX] |= SD_USE_LFO;
+        else if (!strcmp("flags", cmd) && !strcmp("SD_USE_LFO_FAST", val))
+            params[SD_FLAGS_IDX] |= SD_USE_LFO_FAST;
+        else if (!strcmp("flags", cmd) && !strcmp("SD_LONG_ENV", val))
+            params[SD_FLAGS_IDX] |= SD_LONG_ENV;
         else if (!strcmp("variation", cmd))
         {
             variation = atoi(val);
@@ -293,10 +297,14 @@ void params_to_code()
     printf("0");
     if (params[SD_FLAGS_IDX] & SD_USE_HPF)
         printf(" | SD_USE_HPF");
-    if (params[SD_FLAGS_IDX] & SD_USE_LFO)
-        printf(" | SD_USE_LFO");
     if (params[SD_FLAGS_IDX] & SD_HPF_LOW_FREQ)
         printf(" | SD_HPF_LOW_FREQ");
+    if (params[SD_FLAGS_IDX] & SD_USE_LFO)
+        printf(" | SD_USE_LFO");
+    if (params[SD_FLAGS_IDX] & SD_USE_LFO_FAST)
+        printf(" | SD_USE_LFO_FAST");
+    if (params[SD_FLAGS_IDX] & SD_LONG_ENV)
+        printf(" | SD_LONG_ENV");
     printf(" // flags\n");
 }
 
