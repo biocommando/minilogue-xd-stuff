@@ -56,13 +56,6 @@ float process_syn_drum()
     return v;
 }
 
-#define SD_FREQ_WF_IDX 0
-#define SD_PITCH_MOD_IDX 1
-#define SD_OSC_MIX_IDX 2
-#define SD_NOISE_MIX_IDX 3
-#define SD_VOL_MOD_IDX 4
-#define SD_FLAGS_IDX 5
-
 #define SD_USE_HPF 1
 #define SD_HPF_LOW_FREQ 2
 #define SD_USE_LFO 4
@@ -74,115 +67,161 @@ float process_syn_drum()
 
 #define SD_PACK_FREQ_WF(waveform, frequency) ((((uint8_t)(waveform)) << 6) | (frequency))
 
-static const uint8_t syn_drum_params[] = {
+struct syn_drum_params_t
+{
+    uint8_t freq_wf;
+    uint8_t pitch_mod;
+    uint8_t osc_mix;
+    uint8_t noise_mix;
+    uint8_t vol_mod;
+    uint8_t flags;
+};
+
+static const struct syn_drum_params_t syn_drum_params[] = {
     // kick 1
-    SD_PACK_FREQ_WF(OSC_TRIANGLE, 8),   // freq
-    140,                        // pitch mod
-    255,                        // osc mix
-    0,                          // noise mix
-    150,                        // vol mod
-    0,                          // Flags
+    {
+     .freq_wf = SD_PACK_FREQ_WF(OSC_TRIANGLE, 8),
+     .pitch_mod = 140,
+     .osc_mix = 255,
+     .noise_mix = 0,
+     .vol_mod = 150,
+     .flags = 0,
+     },
+
     // kick 2
-    SD_PACK_FREQ_WF(OSC_TRIANGLE, 10),  // freq
-    180,                        // pitch mod
-    255,                        // osc mix
-    0,                          // noise mix
-    150,                        // vol mod
-    0,                          // Flags
+    {
+     .freq_wf = SD_PACK_FREQ_WF(OSC_TRIANGLE, 10),
+     .pitch_mod = 180,
+     .osc_mix = 255,
+     .noise_mix = 0,
+     .vol_mod = 150,
+     .flags = 0,
+     },
+
     // snare 1
-    0,                          // freq
-    0,                          // pitch mod
-    0,                          // osc mix
-    255,                        // noise mix
-    70,                         // vol mod
-    0,                          // Flags
+    {
+     .freq_wf = 0,
+     .pitch_mod = 0,
+     .osc_mix = 0,
+     .noise_mix = 255,
+     .vol_mod = 70,
+     .flags = 0,
+     },
+
     // snare 2
-    SD_PACK_FREQ_WF(OSC_SQUARE, 5),     // freq
-    200,                        // pitch mod
-    32,                         // osc mix
-    255,                        // noise mix
-    100,                        // vol mod
-    0,                          // Flags
+    {
+     .freq_wf = SD_PACK_FREQ_WF(OSC_SQUARE, 5),
+     .pitch_mod = 200,
+     .osc_mix = 32,
+     .noise_mix = 255,
+     .vol_mod = 100,
+     .flags = 0,
+     },
+
     // hcp
-    SD_PACK_FREQ_WF(OSC_SQUARE, 20),    // freq
-    80,                         // pitch mod
-    50,                         // osc mix
-    255,                        // noise mix
-    120,                        // vol mod
-    SD_USE_LFO | SD_HPF_LOW_FREQ,  // Flags
+    {
+     .freq_wf = SD_PACK_FREQ_WF(OSC_SQUARE, 20),
+     .pitch_mod = 80,
+     .osc_mix = 50,
+     .noise_mix = 255,
+     .vol_mod = 120,
+     .flags = SD_USE_LFO,
+     },
+
     // hhc
-    0,                          // freq
-    0,                          // pitch mod
-    0,                          // osc mix
-    255,                        // noise mix
-    0,                          // vol mod
-    SD_USE_HPF,                 // Flags
+    {
+     .freq_wf = 0,
+     .pitch_mod = 0,
+     .osc_mix = 0,
+     .noise_mix = 255,
+     .vol_mod = 0,
+     .flags = SD_USE_HPF,
+     },
+
     // tam
-    SD_PACK_FREQ_WF(OSC_SAW, 31),       // freq
-    252,                        // pitch mod
-    255,                        // osc mix
-    128,                        // noise mix
-    0,                          // vol mod
-    SD_USE_LFO | SD_USE_HPF,    // Flags
+    {
+     .freq_wf = SD_PACK_FREQ_WF(OSC_SAW, 31),
+     .pitch_mod = 252,
+     .osc_mix = 255,
+     .noise_mix = 128,
+     .vol_mod = 0,
+     .flags = SD_USE_LFO | SD_USE_HPF,
+     },
+
     // hho
-    0,                          // freq
-    0,                          // pitch mod
-    0,                          // osc mix
-    255,                        // noise mix
-    160,                        // vol mod
-    SD_USE_HPF,                 // Flags
+    {
+     .freq_wf = 0,
+     .pitch_mod = 0,
+     .osc_mix = 0,
+     .noise_mix = 255,
+     .vol_mod = 160,
+     .flags = SD_USE_HPF,
+     },
+
     // cow
-    SD_PACK_FREQ_WF(OSC_SQUARE, 20),    // freq
-    255,                        // pitch mod
-    180,                        // osc mix
-    0,                          // noise mix
-    10,                         // vol mod
-    0,                          // Flags
+    {
+     .freq_wf = SD_PACK_FREQ_WF(OSC_SQUARE, 20),
+     .pitch_mod = 255,
+     .osc_mix = 180,
+     .noise_mix = 0,
+     .vol_mod = 10,
+     .flags = 0,
+     },
+
     // crs
-    0,                          // freq
-    0,                          // pitch mod
-    0,                          // osc mix
-    255,                        // noise mix
-    210,                        // vol mod
-    SD_HPF_LOW_FREQ,            // Flags
+    {
+     .freq_wf = 0,
+     .pitch_mod = 0,
+     .osc_mix = 0,
+     .noise_mix = 255,
+     .vol_mod = 210,
+     .flags = SD_HPF_LOW_FREQ,
+     },
+
     // rim
-    SD_PACK_FREQ_WF(OSC_SQUARE, 1),     // freq
-    0,                          // pitch mod
-    128,                        // osc mix
-    128,                        // noise mix
-    0,                          // vol mod
-    0,                          // Flags
+    {
+     .freq_wf = SD_PACK_FREQ_WF(OSC_SQUARE, 1),
+     .pitch_mod = 0,
+     .osc_mix = 128,
+     .noise_mix = 128,
+     .vol_mod = 0,
+     .flags = 0,
+     },
+
     // ht
-    SD_PACK_FREQ_WF(OSC_TRIANGLE, 25),  // freq
-    150,                        // pitch mod
-    192,                        // osc mix
-    20,                         // noise mix
-    140,                        // vol mod
-    0,                          // Flags
+    {
+     .freq_wf = SD_PACK_FREQ_WF(OSC_TRIANGLE, 25),
+     .pitch_mod = 150,
+     .osc_mix = 192,
+     .noise_mix = 20,
+     .vol_mod = 140,
+     .flags = 0,
+     },
+
 };
 
 #define ENV_MAX_LEN 0.9995
 #define EXP_ENV(x) ENV_MAX_LEN + (1 - ENV_MAX_LEN) * x
 #define uint8_to_f(x) (x / 255.0)
 
-static inline void _set_syn_drum_params(const uint8_t *params)
+static inline void _set_syn_drum_params(const struct syn_drum_params_t *params)
 {
-    const uint8_t flags = params[SD_FLAGS_IDX] ^ variation;
-    syn_drum_osc_type = SD_WAVEFORM(params[SD_FREQ_WF_IDX]);
-    syn_drum_osc.frequency = (SD_FREQ(params[SD_FREQ_WF_IDX]) * 32) / (float) k_samplerate;
+    const uint8_t flags = params->flags ^ variation;
+    syn_drum_osc_type = SD_WAVEFORM(params->freq_wf);
+    syn_drum_osc.frequency = (SD_FREQ(params->freq_wf) * 32) / (float) k_samplerate;
     syn_drum_osc.phase = noise < 0 ? -noise : noise;
-    syn_drum_pitch_mod = EXP_ENV(uint8_to_f(params[SD_PITCH_MOD_IDX]));
-    syn_drum_osc_mix = uint8_to_f(params[SD_OSC_MIX_IDX]);
-    syn_drum_noise_mix = uint8_to_f(params[SD_NOISE_MIX_IDX]);
-    syn_drum_vol_mod = EXP_ENV(uint8_to_f(params[SD_VOL_MOD_IDX]));
+    syn_drum_pitch_mod = EXP_ENV(uint8_to_f(params->pitch_mod));
+    syn_drum_osc_mix = uint8_to_f(params->osc_mix);
+    syn_drum_noise_mix = uint8_to_f(params->noise_mix);
+    syn_drum_vol_mod = EXP_ENV(uint8_to_f(params->vol_mod));
     syn_drum_vol = 1;
     use_hpf = flags & (SD_USE_HPF | SD_HPF_LOW_FREQ);
     if (flags & (SD_USE_HPF | SD_HPF_LOW_FREQ))
-        hpf.factor = 0.7180302001078813; // 3 kHz
+        hpf.factor = 0.7180302001078813;        // 3 kHz
     else if (flags & SD_HPF_LOW_FREQ)
-        hpf.factor = 0.8842517205783795; // 1 kHz
+        hpf.factor = 0.8842517205783795;        // 1 kHz
     else
-        hpf.factor = 0.5600991537930968; // 6 kHz
+        hpf.factor = 0.5600991537930968;        // 6 kHz
     use_lfo = flags & (SD_USE_LFO | SD_USE_LFO_FAST);
 
     int lfo_freq = 12;
@@ -203,7 +242,7 @@ static inline void _set_syn_drum_params(const uint8_t *params)
 
 void set_syn_drum_params(int drum_idx, float freq_modifier)
 {
-    _set_syn_drum_params(&syn_drum_params[drum_idx * 6]);
+    _set_syn_drum_params(&syn_drum_params[drum_idx]);
     syn_drum_osc.frequency *= freq_modifier;
 }
 
@@ -214,12 +253,12 @@ void set_syn_drum_variation(uint8_t new_variation)
 
 #ifdef GENWAVES
 
-uint8_t params[SD_FLAGS_IDX + 1];
+struct syn_drum_params_t params;
 int freq = 0, waveform = (int) OSC_SAW;
 
 void read_params(FILE *f, const char *section)
 {
-    memset(params, 0, sizeof(params));
+    memset(&params, 0, sizeof(params));
     int sect_found = section ? 0 : 1;
     while (!feof(f))
     {
@@ -256,23 +295,23 @@ void read_params(FILE *f, const char *section)
                 waveform = (int) OSC_SQUARE;
         }
         else if (!strcmp("pitch_mod", cmd))
-            params[SD_PITCH_MOD_IDX] = atoi(val);
+            params.pitch_mod = atoi(val);
         else if (!strcmp("osc_mix", cmd))
-            params[SD_OSC_MIX_IDX] = atoi(val);
+            params.osc_mix = atoi(val);
         else if (!strcmp("noise_mix", cmd))
-            params[SD_NOISE_MIX_IDX] = atoi(val);
+            params.noise_mix = atoi(val);
         else if (!strcmp("vol_mod", cmd))
-            params[SD_VOL_MOD_IDX] = atoi(val);
+            params.vol_mod = atoi(val);
         else if (!strcmp("flags", cmd) && !strcmp("SD_USE_HPF", val))
-            params[SD_FLAGS_IDX] |= SD_USE_HPF;
+            params.flags |= SD_USE_HPF;
         else if (!strcmp("flags", cmd) && !strcmp("SD_HPF_LOW_FREQ", val))
-            params[SD_FLAGS_IDX] |= SD_HPF_LOW_FREQ;
+            params.flags |= SD_HPF_LOW_FREQ;
         else if (!strcmp("flags", cmd) && !strcmp("SD_USE_LFO", val))
-            params[SD_FLAGS_IDX] |= SD_USE_LFO;
+            params.flags |= SD_USE_LFO;
         else if (!strcmp("flags", cmd) && !strcmp("SD_USE_LFO_FAST", val))
-            params[SD_FLAGS_IDX] |= SD_USE_LFO_FAST;
+            params.flags |= SD_USE_LFO_FAST;
         else if (!strcmp("flags", cmd) && !strcmp("SD_LONG_ENV", val))
-            params[SD_FLAGS_IDX] |= SD_LONG_ENV;
+            params.flags |= SD_LONG_ENV;
         else if (!strcmp("variation", cmd))
         {
             variation = atoi(val);
@@ -280,32 +319,33 @@ void read_params(FILE *f, const char *section)
         else
             printf("Could not parse config line '%s'\n", buf);
     }
-    params[SD_FREQ_WF_IDX] = SD_PACK_FREQ_WF(waveform, freq);
+    params.freq_wf = SD_PACK_FREQ_WF(waveform, freq);
 }
 
 void params_to_code()
 {
-    if (params[SD_FREQ_WF_IDX] == 0)
-        printf("0, // freq\n");
+    printf("{\n");
+    if (params.freq_wf == 0)
+        printf(".freq_wf = 0, // freq\n");
     else
-        printf("SD_PACK_FREQ_WF(%s, %d)\n", waveform == (int) OSC_TRIANGLE
+        printf(".freq_wf = SD_PACK_FREQ_WF(%s, %d)\n", waveform == (int) OSC_TRIANGLE
                ? "OSC_TRIANGLE" : (waveform == (int) OSC_SQUARE ? "OSC_SQUARE" : "OSC_SAW"), freq);
-    printf("%u, // pitch mod\n", params[SD_PITCH_MOD_IDX]);
-    printf("%u, // osc mix\n", params[SD_OSC_MIX_IDX]);
-    printf("%u, // noise mix\n", params[SD_NOISE_MIX_IDX]);
-    printf("%u, // vol mod\n", params[SD_VOL_MOD_IDX]);
-    printf("0");
-    if (params[SD_FLAGS_IDX] & SD_USE_HPF)
+    printf(".pitch_mod = %u, // pitch mod\n", params.pitch_mod);
+    printf(".osc_mix = %u, // osc mix\n", params.osc_mix);
+    printf(".noise_mix = %u, // noise mix\n", params.noise_mix);
+    printf(".vol_mod = %u, // vol mod\n", params.vol_mod);
+    printf(".flags = 0");
+    if (params.flags & SD_USE_HPF)
         printf(" | SD_USE_HPF");
-    if (params[SD_FLAGS_IDX] & SD_HPF_LOW_FREQ)
+    if (params.flags & SD_HPF_LOW_FREQ)
         printf(" | SD_HPF_LOW_FREQ");
-    if (params[SD_FLAGS_IDX] & SD_USE_LFO)
+    if (params.flags & SD_USE_LFO)
         printf(" | SD_USE_LFO");
-    if (params[SD_FLAGS_IDX] & SD_USE_LFO_FAST)
+    if (params.flags & SD_USE_LFO_FAST)
         printf(" | SD_USE_LFO_FAST");
-    if (params[SD_FLAGS_IDX] & SD_LONG_ENV)
+    if (params.flags & SD_LONG_ENV)
         printf(" | SD_LONG_ENV");
-    printf(" // flags\n");
+    printf(" // flags\n}\n");
 }
 
 int main(int argc, char **argv)
@@ -325,13 +365,13 @@ int main(int argc, char **argv)
     fclose(f);
     struct wav_file wav;
     create_wav_file(&wav, k_samplerate * 4, 1, 16, k_samplerate);
-    _set_syn_drum_params(params);
+    _set_syn_drum_params(&params);
     for (int i = 0; i < k_samplerate * 4; i++)
     {
         float v = process_syn_drum();
         wav_set_normalized(&wav, i, &v);
     }
-    write_wav_file(argv[2], &wav);      // "/mnt/shared/output.wav"
+    write_wav_file(argv[2], &wav);
     free_wav_file(&wav);
     params_to_code();
     return 0;
