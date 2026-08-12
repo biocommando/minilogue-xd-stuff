@@ -5,7 +5,11 @@
 #include <math.h>
 #include <string.h>
 
-static float sine_table[256];
+#ifndef BASIC_OSCILLATOR_SINE_TABLE_SIZE
+#define BASIC_OSCILLATOR_SINE_TABLE_SIZE 256
+#endif
+
+static float sine_table[BASIC_OSCILLATOR_SINE_TABLE_SIZE];
 
 static inline void init_sine_table()
 {
@@ -13,8 +17,8 @@ static inline void init_sine_table()
     if (!sine_table_initialized)
     {
         sine_table_initialized = 1;
-        for (int i = 0; i < 256; i++)
-            sine_table[i] = sin(6.283185307179586476925286766559 / 256 * i);
+        for (int i = 0; i < BASIC_OSCILLATOR_SINE_TABLE_SIZE; i++)
+            sine_table[i] = sin(6.283185307179586476925286766559 / BASIC_OSCILLATOR_SINE_TABLE_SIZE * i);
     }
 }
 
@@ -60,7 +64,7 @@ void BasicOscillator_randomizePhase(BasicOscillator *bo, float rndAmount)
 
 inline static float sin1(float phase)
 {
-    return sine_table[(int) (phase * 256)];
+    return sine_table[(int) (phase * BASIC_OSCILLATOR_SINE_TABLE_SIZE)];
 }
 
 inline static float tri1(float phase)
