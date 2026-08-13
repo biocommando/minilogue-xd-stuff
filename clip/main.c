@@ -49,6 +49,6 @@ void MODFX_PARAM(uint8_t index, int32_t value)
     else if (index == k_user_modfx_param_depth)
     {
         clip_lev1 = v;
-        offs = 1 - v;
+        offs = (1.0 - v) * 0.5;
     }
 }
