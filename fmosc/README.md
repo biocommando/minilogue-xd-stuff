@@ -1,8 +1,4 @@
-## Korg logue SDK: 2 OP FM Vector Synth User Oscillator
-A 2 operator FM vector synth user oscillator for the **Korg Minilogue XD** multi-engine, built using the official C/C++ **logue-sdk**.
-
-## Building / binary distribution
-A compiled and tested binary comes with this repository. To build, use the **Minilogue SDK**. To use the same workflow as I, use the legacy building method and place this repository right under `logue-sdk/platform/minilogue-xd`.
+# 2 OP FM Vector Synth
 
 ## Architecture
 The oscillator has 2 identical FM synth engines with the following operator architecture:
@@ -40,7 +36,3 @@ Synth engine 1 is edited using parameter 1..3 and synth engine 2 using identical
     * over 0 = decay envelope
     * below 0 = attack+decay envelope
     * Maximum envelope time ~6 seconds.
-
-## License
-Original code MIT licensed (see LICENSE.md). Korg code BSD 3-Clause Licensed, license headers retained in relevant code files.
-

@@ -30,7 +30,3 @@ using it. It comes with an extra LFO that can be used for additional shape modul
       controls the playback starting position in the remainder of the wavetable. (The start position
       will not wrap, so e.g. with window=0.2, the position will be in range 0..0.8).
 - 6: Wavetable ordering
-
-## License
-Original code MIT licensed (see LICENSE.md). Korg code BSD 3-Clause Licensed, license headers retained in relevant code files.
-

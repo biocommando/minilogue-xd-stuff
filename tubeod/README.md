@@ -9,4 +9,3 @@ both controls the output level and noise gating.
 
 - TIME parameter controls the pre-gain.
 - DEPTH parameter controls the post-gain.
-

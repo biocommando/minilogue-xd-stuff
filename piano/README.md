@@ -1,8 +1,5 @@
-## Korg logue SDK: Piano/Granular User Oscillator
-A sample-playback and granular synthesis user oscillator for the **Korg Minilogue XD** multi-engine, built using the official C/C++ **logue-sdk**.
-
-## Building / binary distribution
-A compiled and tested binary comes with this repository. To build, use the **Minilogue SDK**. To use the same workflow as I, use the legacy building method and place this repository right under `logue-sdk/platform/minilogue-xd`.
+## Korg logue SDK: Sample/Granular User Oscillator
+A sample-playback and granular synthesis user oscillator
 
 ## Architecture
 Based on a simple sample playback engine that has a single ~1.4 seconds long piano note (middle C) sampled from a software instrument with a touch of compression. The data has been compressed to 22050 Hz / 8 bit signed format (source file generated during build, source sample in `sampledata/piano.wav`, see the next chapter for more information).
@@ -35,8 +32,6 @@ make chg_piano
 
 These will identify as "piano", "guitar" and "choir" in the manifest.json that is generated from manifest.json.in template.
 
-As far as I have noticed, samples that have an impact type transient will work the best, like piano and guitar samples. If you try the choir sample, it has a cool sound too but the granular/wavetable features don't result in as musically interesting results.
-
 ### Parameters
 By default the oscillator is in "ROMpler playback mode". You can add in wavetable and granular like features using the **Shape** and **Shift + Shape** parameters, respectively. The user parameters are used for fine tuning these features.
 
@@ -58,7 +53,3 @@ By default the oscillator is in "ROMpler playback mode". You can add in wavetabl
 - 4: `BW Limit` 1..40:
     * Bandwidth limiting filter cutoff (times fundamental frequency)
     * Default: 20
-
-## License
-Original code MIT licensed (see LICENSE.md). Korg code BSD 3-Clause Licensed, license headers retained in relevant code files.
-
