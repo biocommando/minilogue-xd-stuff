@@ -1,6 +1,7 @@
 #include "usermodfx.h"
 
-static float gain = 1, clip_lev0 = -1, clip_lev1 = 1, offs = 0;
+static float gain = 1, clip_lev0 = -1, clip_lev1 = 1,
+             offs = 0, amp = 1;
 
 void MODFX_INIT(uint32_t platform, uint32_t api)
 {
@@ -17,7 +18,7 @@ static inline float process_one_sample(float input)
     if (s > clip_lev1)
         s = clip_lev1;
     s += offs;
-
+    s *= amp;
     return s;
 }
 
@@ -50,5 +51,7 @@ void MODFX_PARAM(uint8_t index, int32_t value)
     {
         clip_lev1 = v;
         offs = (1.0 - v) * 0.5;
+        const float signal_max = 1 - offs;
+        amp = 1.0 / signal_max;
     }
 }
