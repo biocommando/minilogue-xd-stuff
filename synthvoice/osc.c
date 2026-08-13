@@ -3,6 +3,7 @@
 #include "moog_filter.h"
 #include "userosc.h"
 #include "synth_random.h"
+#include "stuff_util.h"
 
 static AdsrEnvelope env;
 static MicrotrackerMoog filter;
@@ -63,10 +64,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
 
     const float shape_lfo = q31_to_f32(params->shape_lfo);
 
-    q31_t *__restrict y = (q31_t *) yn;
-    const q31_t *y_e = y + frames;
-
-    for (; y != y_e;)
+    OSC_LOOP(y, yn, frames)
     {
         AdsrEnvelope_calculateNext(&env);
         float mod = AdsrEnvelope_getEnvelope(&env);
@@ -78,7 +76,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         out += BasicOscillator_getValue(&sub, *sub_waveform) * sub_mix;
         out = MicrotrackerMoog_calculate(&filter, out);
 
-        *(y++) = f32_to_q31(out);
+        *(y++) = safe_f32_to_q31(out);
     }
 }
 

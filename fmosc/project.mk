@@ -8,7 +8,7 @@ UCSRC = osc.c 2opfmsynth.c
 
 UCXXSRC =
 
-UINCDIR =
+UINCDIR = ../common/src
 
 UDEFS =
 

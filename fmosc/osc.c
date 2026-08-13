@@ -1,5 +1,6 @@
 #include "2opfmsynth.h"
 #include "userosc.h"
+#include "stuff_util.h"
 
 static VoiceFmSynth2Op v1, v2;
 
@@ -50,16 +51,13 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
     const float mix2 = modulated_mix;
     const float mix1 = 1 - modulated_mix;
 
-    q31_t *__restrict y = (q31_t *) yn;
-    const q31_t *y_e = y + frames;
-
-    for (; y != y_e;)
+    OSC_LOOP(y, yn, frames)
     {
         const float o1 = process_voice_fm_synth_2op(&v1, asym_clip) * mix1;
         const float o2 = process_voice_fm_synth_2op(&v2, asym_clip) * mix2;
         const float out = o1 + o2;
 
-        *(y++) = f32_to_q31(out);
+        *(y++) = safe_f32_to_q31(out);
     }
 }
 

@@ -3,6 +3,7 @@
 #include "waveforms.h"
 #include "waveform_random_orders.h"
 #include "manifest_params.h"
+#include "stuff_util.h"
 
 static BasicOscillator osc, osc2, lfo;
 static float window = 1, pos = 0, wt_param = 0;
@@ -81,12 +82,10 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
     }
     BasicOscillator_setWaveTableParams(&osc, mod_pos, mod_window);
 
-    q31_t *__restrict y = (q31_t *) yn;
-    const q31_t *y_e = y + frames;
     const float mix_inc = 1.0 / frames;
     float mix = 0;
 
-    for (; y != y_e;)
+    OSC_LOOP(y, yn, frames)
     {
         BasicOscillator_calculateNext(&osc);
         BasicOscillator_calculateNext(&osc2);
@@ -96,7 +95,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         mix += mix_inc;
 
         const float out = o1 * mix + o2 * (1 - mix);
-        *(y++) = f32_to_q31(out);
+        *(y++) = safe_f32_to_q31(out);
     }
     sticky_counter += frames;
 }

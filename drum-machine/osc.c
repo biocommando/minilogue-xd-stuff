@@ -2,6 +2,7 @@
 #include "manifest_params.h"
 #include "combined_waveforms.h"
 #include "syndrum.h"
+#include "stuff_util.h"
 
 #define NOTE_C 0
 #define NOTE_C_SHARP 1
@@ -77,10 +78,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
     const float g1 = mod_syn_drum_mix < 0.5 ? 1 : 2 - 2 * mod_syn_drum_mix;
     const float g2 = mod_syn_drum_mix < 0.5 ? 2 * mod_syn_drum_mix : 1;
 
-    q31_t *__restrict y = (q31_t *) yn;
-    const q31_t *y_e = y + frames;
-
-    for (; y != y_e;)
+    OSC_LOOP(y, yn, frames)
     {
         osc.phase += osc.inc;
         float out = compressed_osc_get(&osc) * g1 + process_syn_drum() * g2;

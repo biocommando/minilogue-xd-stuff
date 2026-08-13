@@ -1,6 +1,7 @@
 #include "flt.h"
 #include "dataoscsrc.h"
 #include "userosc.h"
+#include "stuff_util.h"
 
 #define MIDDLE_C_FREQ_HZ 261.6256
 
@@ -111,10 +112,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
 
     uint32_t loopback_point = calc_loopback_point(osc.loopback_point + shape_lfo);
 
-    q31_t *__restrict y = (q31_t *) yn;
-    const q31_t *y_e = y + frames;
-
-    for (; y != y_e;)
+    OSC_LOOP(y, yn, frames)
     {
         if (osc.release_state == RELEASE_STATE_ENDED)
         {
@@ -144,7 +142,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         }
 
         out = process_filter(&osc.bwlim, out);
-        *(y++) = f32_to_q31(out);
+        *(y++) = safe_f32_to_q31(out);
     }
 }
 

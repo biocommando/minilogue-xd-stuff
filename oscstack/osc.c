@@ -3,6 +3,7 @@
 #include "userosc.h"
 #include "manifest_params.h"
 #include "waveform.h"
+#include "stuff_util.h"
 
 #define N_OSC 3
 static BasicOscillator osc[N_OSC];
@@ -46,10 +47,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
     for (int i = 0; i < N_OSC; i++)
         BasicOscillator_setWaveTableParams(&osc[i], mod_wt_pos, 0.25);
 
-    q31_t *__restrict y = (q31_t *) yn;
-    const q31_t *y_e = y + frames;
-
-    for (; y != y_e;)
+    OSC_LOOP(y, yn, frames)
     {
         float out = 0, amp_mult = 1 - shape_lfo;
         for (int i = 0; i < N_OSC; i++)
@@ -62,7 +60,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         }
         out += (float) (synth_random() & 0xFFFFF) / (float)0xFFFFF * noise_mix;
 
-        *(y++) = f32_to_q31(out);
+        *(y++) = safe_f32_to_q31(out);
     }
 }
 
