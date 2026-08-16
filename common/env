@@ -82,7 +82,7 @@ function uurelease {
     for p in $(uulist | sort)
     do
         echo "+++++++++++++ Building $p +++++++++++++"
-        uuvers $p $version
+        $MANIFEST_TOOL "$PROJ_BASE_PATH/$p/manifest.json" --set-version $version
         if [ "$?" != "0" ]
         then
           echo "<<$p>> Setting version failed"
