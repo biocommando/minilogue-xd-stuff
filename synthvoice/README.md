@@ -33,6 +33,7 @@ Models one limited synth voice. Features:
     * 9 = noise wavetable 50% length
     * 10 = noise wavetable 75% length
     * 11 = noise wavetable 100% length
+    * 12 = noise (sub oscillator either 8 or 16 times downsampled noise)
 - 6: Sub oscillator mix
 	* -100 % = only sub oscillator (same waveform as main)
 	*    0 % = only main oscillator

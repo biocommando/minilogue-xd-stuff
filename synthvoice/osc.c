@@ -12,6 +12,7 @@ static BasicOscillator osc, sub;
 static enum OscType waveform = OSC_TRIANGLE, wf_sqr = OSC_SQUARE;
 static enum OscType *sub_waveform = NULL;
 static float sub_mix = 0, main_mix = 1;
+static uint8_t noise_on = 0, sub_noise_mask = 7;
 
 #define WT_LEN 128
 #define WT_NUM 4
@@ -63,6 +64,8 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
     update_inc(params);
 
     const float shape_lfo = q31_to_f32(params->shape_lfo);
+    float last_noise = 0;
+    uint8_t update_sub_noise = 0;
 
     OSC_LOOP(y, yn, frames)
     {
@@ -72,11 +75,25 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         MicrotrackerMoog_setModulation(&filter, mod);
         BasicOscillator_calculateNext(&osc);
         BasicOscillator_calculateNext(&sub);
-        float out = BasicOscillator_getValue(&osc, waveform) * main_mix;
-        out += BasicOscillator_getValue(&sub, *sub_waveform) * sub_mix;
+        float out;
+        if (noise_on)
+        {
+            const float n = (synth_random() & 0xFFFFF) / ((float)0xFFFFF);
+            out = n * main_mix;
+            if (update_sub_noise == 0)
+                last_noise = n;
+            out += last_noise * sub_mix;
+        }
+        else
+        {
+            out = BasicOscillator_getValue(&osc, waveform) * main_mix;
+            out += BasicOscillator_getValue(&sub, *sub_waveform) * sub_mix;
+        }
         out = MicrotrackerMoog_calculate(&filter, out);
 
         *(y++) = safe_f32_to_q31(out);
+
+        update_sub_noise = (update_sub_noise + 1) & sub_noise_mask;
     }
 }
 
@@ -110,6 +127,7 @@ void OSC_PARAM(uint16_t index, uint16_t value)
             AdsrEnvelope_setRelease(&env, 4 * k_samplerate * (value / 100.0));
             break;
         case k_user_osc_param_id5:
+            noise_on = 0;
             if (value == 0)
                 waveform = OSC_SAW;
             else if (value == 1)
@@ -118,6 +136,8 @@ void OSC_PARAM(uint16_t index, uint16_t value)
                 waveform = OSC_TRIANGLE;
             else if (value == 3)
                 waveform = OSC_SINE;
+            else if (value == 11)
+                noise_on = 1;
             else if (value >= 4)
             {
                 waveform = OSC_WT;
@@ -148,11 +168,13 @@ void OSC_PARAM(uint16_t index, uint16_t value)
             {
                 sub_waveform = &wf_sqr;
                 value -= 100;
+                sub_noise_mask = 0xf;
             }
             else
             {
                 sub_waveform = &waveform;
                 value = 100 - value;
+                sub_noise_mask = 7;
             }
             sub_mix = value / 100.0;
             main_mix = 1 - sub_mix;
