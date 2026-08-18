@@ -1,10 +1,11 @@
 #include "usermodfx.h"
 #include "compclip.h"
 
-#define N_SAMPLE_PAIRS 1851
+#define N_SAMPLE_PAIRS 3000
 
 static uint16_t b_idx = 0;
-static uint8_t buf[N_SAMPLE_PAIRS * 3], pair_idx = 0;
+static __sdram uint8_t buf[N_SAMPLE_PAIRS * 3];
+static uint8_t pair_idx = 0;
 static float b_idx_inc = 0, b_idx_acc = 0;
 static float dl_val[2] = {0,0}, feed = 0;
 
@@ -35,8 +36,7 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
 {
     (void) platform;
     (void) api;
-    for (uint16_t i = 0; i < sizeof(buf); i++)
-        buf[i] = 0;
+    memset(buf, 0, sizeof(buf));
 }
 
 void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, float *sub_yn, uint32_t frames)
@@ -61,14 +61,16 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
                     b_idx = 0;
                 pair_idx = 0;
             }
-            static int16_t d[2]; // marking this static saves some bytes
+            int16_t d[2];
             get2_from_12bit_buf(d, b_idx, buf);
             
             const float f = (to_signed_12bitval(d[pair_idx]) / (float)0x7ff) * feed;
             
             dl_val[0] = dl_val[1];
             dl_val[1] = f;
-            const float new_dl_val = dl_val[0] + input;
+            float new_dl_val = dl_val[0] + input;
+            if (new_dl_val > 1) new_dl_val = 1;
+            else if (new_dl_val < -1) new_dl_val = -1;
 
             d[pair_idx] = 0x7ff * new_dl_val;
             set2_to_12bit_buf(d, b_idx, buf);
@@ -86,7 +88,7 @@ void MODFX_PARAM(uint8_t index, int32_t value)
     const float v = q31_to_f32(value);
     if (index == k_user_modfx_param_time)
     {
-        b_idx_inc = (1 - v) * 0.95 + 0.05;
+        b_idx_inc = (1 - v) * 0.91 + 0.09;
     }
     else if (index == k_user_modfx_param_depth)
     {
