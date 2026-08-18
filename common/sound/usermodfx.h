@@ -3,6 +3,10 @@
 #include <stdint.h>
 
 #include <math.h>
+#include <string.h>
+
+#define fx_get_bpm() 1200
+#define fx_get_bpmf() 120.0f
 typedef enum
 {
     k_user_modfx_param_time = 0,
