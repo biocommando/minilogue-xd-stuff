@@ -6,7 +6,7 @@
 static uint8_t buf[N_SAMPLE_PAIRS * 3], pair_idx = 0;
 static uint16_t b_idx = 0;
 static float b_idx_inc = 0, b_idx_acc = 0;
-static float dl_val = 0, feed = 0;
+static float dl_val[2] = {0,0}, feed = 0;
 
 static inline int16_t to_signed_12bitval(int16_t v)
 {
@@ -67,14 +67,17 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
             int16_t d[2];
             get2_from_12bit_buf(d, b_idx, buf);
             
-            dl_val = (to_signed_12bitval(d[pair_idx]) / (float)0x7ff) * feed;
+            const float f = (to_signed_12bitval(d[pair_idx]) / (float)0x7ff) * feed;
             
-            const float new_dl_val = dl_val + *x;
+            dl_val[0] = dl_val[1];
+            dl_val[1] = f;
+            const float new_dl_val = dl_val[0] + *x;
 
             d[pair_idx] = 0x7ff * new_dl_val;
             set2_to_12bit_buf(d, b_idx, buf);
         }
-        const float out = *x + dl_val;
+        const float dl_val_int = dl_val[0] + (dl_val[1] - dl_val[0]) * b_idx_acc;
+        const float out = *x + dl_val_int;
         *(y++) = out;
         *(y++) = out;
         x += 2;
