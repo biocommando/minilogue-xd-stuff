@@ -126,6 +126,8 @@ int create_wav_file(struct wav_file *wav, unsigned num_frames, unsigned channels
  */
 int wav_get_normalized(const struct wav_file *wav, unsigned sample_idx, float *value);
 
+int wav_get_normalized_linint(const struct wav_file *wav, double sample_idx, float *value);
+
 /**
  * @brief Set an n-channel sample from value pointer to index sample_idx. The sample should be in range
  * -1.0f ... 1.0f. If the sample is outside of the range the sample is clipped. The value pointer must

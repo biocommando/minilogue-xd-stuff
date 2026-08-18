@@ -244,6 +244,25 @@ int wav_get_normalized(const struct wav_file *wav, unsigned sample_idx, float *v
     return 0;
 }
 
+int wav_get_normalized_linint(const struct wav_file *wav, double sample_idx, float *value)
+{
+  if (sample_idx < 0)
+    return -2;
+  unsigned idx = sample_idx;
+  int ret_a = wav_get_normalized(wav, idx, value);
+  if (ret_a != 0)
+    return ret_a;
+  float *s = malloc(wav->channels * sizeof(float));
+  int ret_b = wav_get_normalized(wav, idx + 1, s);
+  if (ret_b == 0)
+  {
+    for (int i = 0; i < wav->channels; i++)
+      value[i] = value[i] + (s[i] - value[i]) * (sample_idx - (unsigned)(sample_idx));
+  }
+  free(s);
+  return 0;
+}
+
 int wav_set_normalized(struct wav_file *wav, unsigned sample_idx, float *value)
 {
     if (!wav->data)
