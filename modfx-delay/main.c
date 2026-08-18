@@ -1,23 +1,19 @@
 #include "usermodfx.h"
 #include "compclip.h"
 
-#define N_SAMPLE_PAIRS 1848
+#define N_SAMPLE_PAIRS 1851
 
-static uint8_t buf[N_SAMPLE_PAIRS * 3], pair_idx = 0;
 static uint16_t b_idx = 0;
+static uint8_t buf[N_SAMPLE_PAIRS * 3], pair_idx = 0;
 static float b_idx_inc = 0, b_idx_acc = 0;
 static float dl_val[2] = {0,0}, feed = 0;
 
 static inline int16_t to_signed_12bitval(int16_t v)
 {
-    if (v & 0x800)
-    {
-        v |= 0xf000;
-    }
-    return v;
+    return ((int16_t)(v << 4)) >> 4;
 }
 
-static void get2_from_12bit_buf(int16_t *s, uint32_t pos, const uint8_t *buf)
+static inline void get2_from_12bit_buf(int16_t *s, uint32_t pos, const uint8_t *buf)
 {
     const uint32_t buf_idx = pos * 3;
     const uint32_t v32bit = (*(uint32_t*)(buf + buf_idx)) & 0x00ffffff;
@@ -53,6 +49,7 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
 
     for (uint32_t i = 0; i < frames; i++)
     {
+        const float input = *x;
         b_idx_acc += b_idx_inc;
         if (b_idx_acc >= 1)
         {
@@ -64,20 +61,20 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
                     b_idx = 0;
                 pair_idx = 0;
             }
-            int16_t d[2];
+            static int16_t d[2]; // marking this static saves some bytes
             get2_from_12bit_buf(d, b_idx, buf);
             
             const float f = (to_signed_12bitval(d[pair_idx]) / (float)0x7ff) * feed;
             
             dl_val[0] = dl_val[1];
             dl_val[1] = f;
-            const float new_dl_val = dl_val[0] + *x;
+            const float new_dl_val = dl_val[0] + input;
 
             d[pair_idx] = 0x7ff * new_dl_val;
             set2_to_12bit_buf(d, b_idx, buf);
         }
         const float dl_val_int = dl_val[0] + (dl_val[1] - dl_val[0]) * b_idx_acc;
-        const float out = *x + dl_val_int;
+        const float out = input + dl_val_int;
         *(y++) = out;
         *(y++) = out;
         x += 2;
