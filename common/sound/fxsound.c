@@ -29,7 +29,9 @@ int main(int argc, char **argv)
     puts("Can't read input wav file");
     return 1;
   }
-  create_wav_file(&w_out, w_in.num_frames, 2, 16, k_samplerate);
+  const double w_in_sr_ratio = (double)w_in.sample_rate / (double)k_samplerate;
+  const unsigned out_num_frames = w_in.num_frames / w_in_sr_ratio;
+  create_wav_file(&w_out, out_num_frames, 2, 16, k_samplerate);
   
   MODFX_INIT(0, 0);
   
@@ -47,12 +49,12 @@ int main(int argc, char **argv)
   float sub_x[128], sub_y[128];
   memset(sub_x, 0, sizeof(sub_x));
   memset(sub_y, 0, sizeof(sub_y));
-  while (sample_i < w_in.num_frames)
+  while (sample_i < w_out.num_frames)
   {
       for (int i = 0; i < bsize; i++)
       {
         float f[2];
-        wav_get_normalized(&w_in, sample_i + i, f);
+        wav_get_normalized_linint(&w_in, (sample_i + i) * w_in_sr_ratio, f);
         main_x[i * 2] = f[0];
         main_x[i * 2 + 1] = f[1];
       }
