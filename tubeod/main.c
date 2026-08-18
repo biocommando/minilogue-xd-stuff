@@ -27,7 +27,7 @@ __fast_inline float fastsqrt(float input)
 {
     // Square root approximation using Halley's method
     float xn = input < 0.1 ? 0.056 + 2.81 * input : 0.331 + 0.4173 * input;
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < 4; i++)
     {
         const float xn2 = xn * xn;
         xn = xn * (xn2 + 3 * input) / (3 * xn2 + input);
@@ -62,17 +62,16 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
     next_frame_silent = 1;
     for (uint32_t i = 0; i < frames; i++)
     {
-        for (int ch = 0; ch < 2; ch++)
+        float output = process_one_sample(*x) * post_gain;
+        if (fabs(output) > noise_gate_lev)
         {
-            float output = process_one_sample(*(x++)) * post_gain;
-            if (fabs(output) > noise_gate_lev)
-            {
-                next_frame_silent = 0;
-            }
-            if (this_frame_silent)
-                output = 0;
-            *(y++) = output;
+            next_frame_silent = 0;
         }
+        if (this_frame_silent)
+            output = 0;
+        *(y++) = output;
+        *(y++) = output;
+        x += 2;
     }
 }
 
