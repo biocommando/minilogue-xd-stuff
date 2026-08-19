@@ -1,0 +1,126 @@
+<html>
+
+<head>
+    <style>
+        body {
+            background-color: lightslategray;
+        }
+        * {
+            font-family: sans-serif;
+        }
+
+        .grid-row {
+            display: flex;
+        }
+
+        .grid-cell {
+            display: flex;
+            width: 100px;
+            height: 85px;
+            font-size: 36px;
+            background-color: wheat;
+            margin: 5px;
+            user-select: none;
+            overflow: hidden;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-cell.first-in-bar {
+            background-color: burlywood;
+        }
+
+        .grid-cell.song {
+            font-size: 12px;
+            background-color: cyan;
+            font-weight: bold;
+        }
+
+        .strong {
+            font-weight: bold;
+        }
+
+        button {
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        input,
+        select {
+            font-size: 16px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <h2>modfx-drums: drum pattern editor</h2>
+    Divider:
+    <input id="divider" value="2">
+    <hr />
+    <div id="div-grid"></div>
+    <input id="pattern-data" value="" style="width:100%" /><br /> <button onclick="loadPatternData()">Load</button>
+
+    <script>
+        const nSteps = 16
+        let patternStep
+        let pattern = new Array(8).fill(0).map(() => new Array(nSteps).fill(0))
+        function gridCellClick(row, cell) {
+
+            //        patternStep = {row, cell}
+            pattern[row][cell] = pattern[row][cell] ? 0 : 1
+            renderPatternGrid()
+            renderPatternData()
+        }
+
+        function renderPatternData() {
+            const rendered = new Array(nSteps).fill(0)
+            pattern.forEach((seq, row) => seq.forEach((evt, cell) => {
+                if (evt)
+                    rendered[cell] |= 1 << row
+            }))
+            rendered.push(document.querySelector('#divider').value)
+            document.querySelector('#pattern-data').value = rendered.join(', ')
+        }
+
+        function loadPatternData() {
+            pattern = new Array(8).fill(0).map(() => new Array(nSteps).fill(0))
+            document.querySelector('#pattern-data').value.split(',').map(Number)
+                .forEach((evt, idx) => {
+                    if (idx >= nSteps) {
+                        document.querySelector('#divider').value = evt
+                        return
+                    }
+                    for (let bit = 0; bit < 8; bit++)
+                        pattern[bit][idx] = (evt & (1 << bit)) ? 1 : 0
+                })
+            renderPatternGrid()
+        }
+
+        function renderPatternGrid() {
+            pattern.forEach((seq, row) => {
+                seq.forEach((evt, cell) => {
+                    const element = document.querySelector(`[data-grid-cell="${row},${cell}"]`)
+                    element.innerText = evt ? 'x' : ''
+                })
+
+            })
+        }
+        const labels = [
+            'kick', 'snare', 'hihat', 'rim'
+        ]
+        document.querySelector('#div-grid').innerHTML = (
+            new Array(8).fill().map((_, rowIdx) => `
+            <div class="grid-row">
+            <div class="grid-cell song">${labels[rowIdx]}</div>
+            ${new Array(nSteps).fill().map((_, cellIdx) => (
+                `<div class="grid-cell${cellIdx % 4 === 0 ? ' first-in-bar' : ''}" data-grid-cell="${rowIdx},${cellIdx}" onclick="gridCellClick(${rowIdx},${cellIdx})"></div>`
+            )).join('')}
+            </div>
+        `).join('')
+        )
+    </script>
+
+</body>
+
+</html>
