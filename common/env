@@ -8,8 +8,9 @@ function uuresolve {
 		cat /tmp/.minilogue-xd-stuff.uuresolve
 		return 0
 	fi
-	echo $1 > /tmp/.minilogue-xd-stuff.uuresolve
-	echo $1
+	resolved=$(echo $1 | grep -o "[a-zA-Z0-9-]*")
+	echo $resolved > /tmp/.minilogue-xd-stuff.uuresolve
+	echo $resolved
 }
 
 function uulist {
