@@ -1,15 +1,18 @@
 #include "usermodfx.h"
 #include "combined_waveforms.h"
 
-static float gain = 1;
+static float gain = 1, accent = 1;
 static const uint8_t *pattern;
 
-static uint8_t patterns[][16] = {
-    {5,4,6,4,5,4,6,4,5,4,6,4,5,4,6,4},
-    {5,4,6,4,4,1,6,4,5,4,6,4,4,1,6,4},
-    {5,4,4,4,6,4,4,1,4,5,6,4,4,1,6,4},
-    {1,4,3,4,1,4,3,4,1,4,3,4,1,4,3,4},
-    {8,0,4,0,4,0,4,0,8,0,4,0,4,0,4,0},
+#define N_STEPS 16
+#define STEP_DIV_IDX N_STEPS
+
+static uint8_t patterns[][N_STEPS + 1] = {
+    {21, 4, 22, 4, 21, 5, 22, 4, 21, 4, 22, 4, 21, 6, 22, 22, 2},
+    {5,4,6,4,4,1,6,4,5,4,6,4,4,1,6,4,2},
+    {5,4,4,4,6,4,4,1,4,5,6,4,4,1,6,4,2},
+    {1,4,3,4,1,4,3,4,1,4,3,4,1,4,3,4,2},
+    {28, 0, 8, 0, 8, 0, 8, 0, 28, 0, 8, 0, 8, 0, 8, 0, 2},
 };
 
 // Sample playback
@@ -41,6 +44,12 @@ static inline float compressed_osc_get(const struct compressed_osc *osc)
 static uint32_t seq_sample = 0, next_seq_trig = 0, seq_pos = 0,
     tempo = 0, step_len = 0, seq_len = 0;
 
+static inline void set_step_length(uint32_t _tempo)
+{
+  step_len = 48000 * 600 / _tempo / pattern[STEP_DIV_IDX];
+  seq_len = N_STEPS * step_len;
+}
+
 void MODFX_INIT(uint32_t platform, uint32_t api)
 {
     (void) platform;
@@ -56,6 +65,12 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
     pattern = patterns[0];
 }
 
+#define TRIG_MASK_BD 1
+#define TRIG_MASK_SD 2
+#define TRIG_MASK_HH 4
+#define TRIG_MASK_RIM 8
+#define TRIG_MASK_ACCENT 16
+
 void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, float *sub_yn, uint32_t frames)
 {
     (void) sub_xn;
@@ -64,8 +79,7 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
     const uint32_t new_tempo = fx_get_bpm();
     if (new_tempo != tempo)
     {
-        step_len = 48000 * 600 / new_tempo / 2;
-        seq_len = 16 * step_len;
+        set_step_length(new_tempo);
         seq_sample = seq_pos * step_len;
         next_seq_trig = (seq_pos + 1) * step_len;
         if (tempo == 0)
@@ -88,14 +102,17 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
             }
             next_seq_trig = seq_sample + step_len;
             const uint8_t triggers = pattern[seq_pos];
-            if (triggers & 1)
+            if (triggers & TRIG_MASK_BD)
                 osc[WAVEFORM_ID_bd].phase = 0;
-            if (triggers & 2)
+            if (triggers & TRIG_MASK_SD)
                 osc[WAVEFORM_ID_sd].phase = 0;
-            if (triggers & 4)
+            if (triggers & TRIG_MASK_HH)
                 osc[WAVEFORM_ID_hhc].phase = 0;
-            if (triggers & 8)
+            if (triggers & TRIG_MASK_RIM)
                 osc[WAVEFORM_ID_rim].phase = 0;
+            accent = gain * 0.5;
+            if (triggers & TRIG_MASK_ACCENT)
+                accent *= 2;
             seq_pos++;
         }
         
@@ -105,7 +122,7 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
             osc[i].phase += osc[i].inc;
             output += compressed_osc_get(&osc[i]) * osc[i].mix;
         }
-        output *= gain;
+        output *= accent;
         *(y++) = output + *(x++);
         *(y++) = output + *(x++);
     }
@@ -117,6 +134,8 @@ void MODFX_PARAM(uint8_t index, int32_t value)
     if (index == k_user_modfx_param_time)
     {
         pattern = patterns[(int)(5 * 0.99 * v)];
+        if (tempo)
+          set_step_length(tempo);
     }
     else if (index == k_user_modfx_param_depth)
     {
