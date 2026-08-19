@@ -150,8 +150,8 @@ all: PRE_ALL $(OBJS) $(OUTFILES) POST_ALL
 	@echo
 
 soundtool:
-	gcc -I../common/sound -c $(UCSRC)
-	gcc -I../common/sound ../common/sound/fxsound.c ../common/wav_handler/wav_handler.c *.o -o soundtool -lm
+	gcc -I../common/sound -c $(UCSRC) -DMODFX_DRUMS_DEBUG
+	gcc -I../common/sound ../common/sound/fxsound.c ../common/wav_handler/wav_handler.c *.o -o sndtool -lm -DMODFX_DRUMS_DEBUG
 
 PRE_ALL:
 

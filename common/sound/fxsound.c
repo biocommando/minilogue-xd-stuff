@@ -22,6 +22,38 @@ int main(int argc, char **argv)
     puts("depth param");
     return 1;
   }
+#ifdef MODFX_DRUMS_DEBUG
+    extern void set_pattern(const uint8_t *p);
+    static uint8_t pattern[17];
+    FILE *f = fopen("pattern.txt", "r");
+    if (!f)
+    {
+        puts("pattern.txt required if built with MODFX_DRUMS_DEBUG option!");
+        return 1;
+    }
+    for (int i = 0; i < sizeof(pattern);)
+    {
+        char buf[128];
+        unsigned u = 0;
+        fscanf(f, "%s", buf);
+        if (sscanf(buf, "%u", &u) == 1)
+        {
+            pattern[i] = u;
+            i++;
+        }
+        if (feof(f))
+        {
+            puts("failed to read pattern.txt");
+            fclose(f);
+            return 1;
+        }
+    }
+    puts("Read pattern:");
+    for (int i = 0; i < sizeof(pattern); i++)
+        printf("%u, ", pattern[i]);
+    puts("");
+    fclose(f);
+#endif
   
   struct wav_file w_in, w_out;
   if (read_wav_file(argv[1], &w_in) != 0)
@@ -42,7 +74,12 @@ int main(int argc, char **argv)
   LIMQ31(p_depth);
   MODFX_PARAM(k_user_modfx_param_time, f32_to_q31(p_time));
   MODFX_PARAM(k_user_modfx_param_depth, f32_to_q31(p_depth));
-  
+
+#ifdef MODFX_DRUMS_DEBUG
+    set_pattern(pattern);
+#endif
+
+
   int sample_i = 0;
   int bsize = 8;
   float main_x[128], main_y[128];

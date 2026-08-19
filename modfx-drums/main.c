@@ -3,6 +3,11 @@
 
 static float gain = 1, vol = 1, env = 1, osc_inc = 0;
 static const uint8_t *pattern;
+static uint16_t blip_counter = 0;
+
+#ifdef MODFX_DRUMS_DEBUG
+    void set_pattern(const uint8_t *p) { pattern = p; }
+#endif
 
 #define N_STEPS 16
 #define STEP_DIV_IDX N_STEPS
