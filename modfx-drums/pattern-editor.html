@@ -66,8 +66,6 @@
         let patternStep
         let pattern = new Array(8).fill(0).map(() => new Array(nSteps).fill(0))
         function gridCellClick(row, cell) {
-
-            //        patternStep = {row, cell}
             pattern[row][cell] = pattern[row][cell] ? 0 : 1
             renderPatternGrid()
             renderPatternData()
@@ -107,7 +105,7 @@
             })
         }
         const labels = [
-            'kick', 'snare', 'hihat', 'rim', 'accent', 'short', 'pitch'
+            'kick', 'snare', 'hihat', 'rim', 'accent', 'decay', 'pitch', 'cut start'
         ]
         document.querySelector('#div-grid').innerHTML = (
             new Array(8).fill().map((_, rowIdx) => `

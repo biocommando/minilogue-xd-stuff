@@ -77,7 +77,7 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
         osc[i].phase = osc[i].data_len * 5;
         osc[i].mix = 1;
     }
-    osc[WAVEFORM_ID_hhc].mix = 0.2;
+    osc[WAVEFORM_ID_hhc].mix = 0.33;
     pattern = patterns[0];
 }
 
@@ -88,8 +88,10 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
 #define TRIG_MASK_ACCENT 16
 #define TRIG_MASK_SHORT_DECAY 32
 #define TRIG_MASK_ALT_PITCH 64
-#define SHORT_DECAY_INIT_VAL 0.9985f
-#define ALT_PITCH_RATIO 0.5f
+#define TRIG_MASK_PLAY_OFFSET 128
+#define SHORT_DECAY_INIT_VAL 0.9997f
+#define ALT_PITCH_RATIO 0.7f
+#define PLAY_OFFSET_SAMPLES 1000
 
 void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, float *sub_yn, uint32_t frames)
 {
@@ -122,14 +124,17 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
             }
             next_seq_trig = seq_sample + step_len;
             const uint8_t triggers = pattern[seq_pos];
+            uint16_t phase_offset = 0;
+            if (triggers & TRIG_MASK_PLAY_OFFSET)
+                phase_offset = PLAY_OFFSET_SAMPLES;
             if (triggers & TRIG_MASK_BD)
-                osc[WAVEFORM_ID_bd].phase = 0;
+                osc[WAVEFORM_ID_bd].phase = phase_offset;
             if (triggers & TRIG_MASK_SD)
-                osc[WAVEFORM_ID_sd].phase = 0;
+                osc[WAVEFORM_ID_sd].phase = phase_offset;
             if (triggers & TRIG_MASK_HH)
-                osc[WAVEFORM_ID_hhc].phase = 0;
+                osc[WAVEFORM_ID_hhc].phase = phase_offset;
             if (triggers & TRIG_MASK_RIM)
-                osc[WAVEFORM_ID_rim].phase = 0;
+                osc[WAVEFORM_ID_rim].phase = phase_offset;
             vol = gain * 0.5;
             if (triggers & TRIG_MASK_ACCENT)
                 vol *= 2;
@@ -150,9 +155,21 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
         }
         output *= vol;
         vol *= env;
+        if (blip_counter > 0)
+        {
+            output += blip_counter & 63 ? 0.3 : -0.3;
+            blip_counter--;
+        }
         *(y++) = output + *(x++);
         *(y++) = output + *(x++);
     }
+}
+
+static void reset_seq()
+{
+    seq_pos = 0;
+    seq_sample = 0;
+    next_seq_trig = step_len;
 }
 
 void MODFX_PARAM(uint8_t index, int32_t value)
@@ -163,14 +180,18 @@ void MODFX_PARAM(uint8_t index, int32_t value)
         const uint8_t * new_p = patterns[(int)(N_PATTERNS * 0.99 * v)];
         if (tempo)
           set_step_length(tempo);
+        if (new_p != pattern)
+        {
+            reset_seq();
+            blip_counter = 3000;
+        }
+        pattern = new_p;
     }
     else if (index == k_user_modfx_param_depth)
     {
         if (gain < 0.001f && v >= 0.001f)
         {
-            seq_pos = 0;
-            seq_sample = 0;
-            next_seq_trig = step_len;
+            reset_seq();
         }
         gain = v;
     }
