@@ -1,14 +1,14 @@
 #include "usermodfx.h"
 #include "combined_waveforms.h"
 
-static float gain = 1, accent = 1;
+static float gain = 1, vol = 1, env = 1;
 static const uint8_t *pattern;
 
 #define N_STEPS 16
 #define STEP_DIV_IDX N_STEPS
 
 static uint8_t patterns[][N_STEPS + 1] = {
-    {21, 4, 22, 4, 21, 5, 22, 4, 21, 4, 22, 4, 21, 6, 22, 22, 2},
+    {21, 4, 22, 4, 21, 5, 22, 4, 21, 4, 22, 4, 21, 38, 54, 22, 2},
     {5,4,6,4,4,1,6,4,5,4,6,4,4,1,6,4,2},
     {5,4,4,4,6,4,4,1,4,5,6,4,4,1,6,4,2},
     {1,4,3,4,1,4,3,4,1,4,3,4,1,4,3,4,2},
@@ -70,6 +70,8 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
 #define TRIG_MASK_HH 4
 #define TRIG_MASK_RIM 8
 #define TRIG_MASK_ACCENT 16
+#define TRIG_MASK_SHORT_DECAY 32
+#define SHORT_DECAY_INIT_VAL 0.9985f
 
 void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, float *sub_yn, uint32_t frames)
 {
@@ -110,9 +112,12 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
                 osc[WAVEFORM_ID_hhc].phase = 0;
             if (triggers & TRIG_MASK_RIM)
                 osc[WAVEFORM_ID_rim].phase = 0;
-            accent = gain * 0.5;
+            vol = gain * 0.5;
             if (triggers & TRIG_MASK_ACCENT)
-                accent *= 2;
+                vol *= 2;
+            env = 1;
+            if (triggers & TRIG_MASK_SHORT_DECAY)
+                env = SHORT_DECAY_INIT_VAL;
             seq_pos++;
         }
         
@@ -122,7 +127,8 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
             osc[i].phase += osc[i].inc;
             output += compressed_osc_get(&osc[i]) * osc[i].mix;
         }
-        output *= accent;
+        output *= vol;
+        vol *= env;
         *(y++) = output + *(x++);
         *(y++) = output + *(x++);
     }
