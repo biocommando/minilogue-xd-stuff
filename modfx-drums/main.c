@@ -1,14 +1,14 @@
 #include "usermodfx.h"
 #include "combined_waveforms.h"
 
-static float gain = 1, vol = 1, env = 1;
+static float gain = 1, vol = 1, env = 1, osc_inc = 0;
 static const uint8_t *pattern;
 
 #define N_STEPS 16
 #define STEP_DIV_IDX N_STEPS
 
 static uint8_t patterns[][N_STEPS + 1] = {
-    {21, 4, 22, 4, 21, 5, 22, 4, 21, 4, 22, 4, 21, 38, 54, 22, 2},
+    {85, 4, 22, 4, 21, 5, 22, 20, 21, 4, 22, 4, 21, 38, 54, 22, 2},
     {5,4,6,4,4,1,6,4,5,4,6,4,4,1,6,4,2},
     {5,4,4,4,6,4,4,1,4,5,6,4,4,1,6,4,2},
     {1,4,3,4,1,4,3,4,1,4,3,4,1,4,3,4,2},
@@ -22,7 +22,6 @@ struct compressed_osc
     const uint16_t *data;
     uint16_t data_len;
     float phase;
-    float inc;
     float mix;
 };
 
@@ -58,7 +57,6 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
     {
         osc[i].data = get_waveform(i, &osc[i].data_len);
         osc[i].phase = osc[i].data_len * 5;
-        osc[i].inc = 44100.0f / 48000.0f;
         osc[i].mix = 1;
     }
     osc[WAVEFORM_ID_hhc].mix = 0.2;
@@ -71,7 +69,9 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
 #define TRIG_MASK_RIM 8
 #define TRIG_MASK_ACCENT 16
 #define TRIG_MASK_SHORT_DECAY 32
+#define TRIG_MASK_ALT_PITCH 64
 #define SHORT_DECAY_INIT_VAL 0.9985f
+#define ALT_PITCH_RATIO 0.5f
 
 void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, float *sub_yn, uint32_t frames)
 {
@@ -118,13 +118,16 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
             env = 1;
             if (triggers & TRIG_MASK_SHORT_DECAY)
                 env = SHORT_DECAY_INIT_VAL;
+            osc_inc = 44100.0f / 48000.0f;
+            if (triggers & TRIG_MASK_ALT_PITCH)
+                osc_inc *= ALT_PITCH_RATIO;
             seq_pos++;
         }
         
         float output = 0;
         for (int i = 0; i < 4; i++)
         {
-            osc[i].phase += osc[i].inc;
+            osc[i].phase += osc_inc;
             output += compressed_osc_get(&osc[i]) * osc[i].mix;
         }
         output *= vol;
