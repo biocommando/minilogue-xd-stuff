@@ -56,7 +56,9 @@
 <body>
     <h2>modfx-drums: drum pattern editor</h2>
     Divider:
-    <input id="divider" value="2">
+    <input id="divider" value="2"> <button onclick="renderPatternData()">Apply</button>
+    <hr />
+    <button onclick="document.querySelector('#pattern-data').value=new Array(16).fill(0).join(',')+',4';loadPatternData()">Clear</button>
     <hr />
     <div id="div-grid"></div>
     <input id="pattern-data" value="" style="width:100%" /><br /> <button onclick="loadPatternData()">Load</button>
