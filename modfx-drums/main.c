@@ -6,7 +6,13 @@ static const uint8_t *pattern;
 static uint16_t blip_counter = 0;
 
 #ifdef MODFX_DRUMS_DEBUG
-    void set_pattern(const uint8_t *p) { pattern = p; }
+    void set_pattern(const uint8_t *p)
+    {
+        pattern = p;
+        // disable "blip" at the start when overriding the pattern directly.
+        // the counter is set by the fxsound init code in MODFX_PARAM.
+        blip_counter = 0;
+    }
 #endif
 
 #define N_STEPS 16
