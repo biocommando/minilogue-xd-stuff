@@ -64,8 +64,20 @@
     <input id="pattern-data" value="" style="width:100%" /><br /> <button onclick="loadPatternData()">Load</button>
     <hr/>
     <button onclick="fetch('/save-pattern', {method:'post', body: JSON.stringify({pattern: document.getElementById('pattern-data').value})})">Export to pattern.txt</button>
+    <button onclick="render()">Render</button>
+    input: <input id="render-input"> output: <input id="render-output"> volume: <input id="render-volume" value="0.5">
 
     <script>
+        function render() {
+            fetch('/render', {
+                method: 'post',
+                body: JSON.stringify({
+                  input: document.getElementById('render-input').value,
+                  output: document.getElementById('render-output').value,
+                  volume: Number(document.getElementById('render-input').volume)}),
+            })
+        }
+
         const nSteps = 16
         let patternStep
         let pattern = new Array(8).fill(0).map(() => new Array(nSteps).fill(0))

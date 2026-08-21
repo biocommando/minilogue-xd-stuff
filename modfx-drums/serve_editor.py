@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -55,13 +56,21 @@ class SavePattern:
     id = 'POST:/save-pattern'
     def handle_request(self, body):
         with open('pattern.txt', 'w') as f:
-            f.write(body['pattern'])
+            f.write(body['pattern'] + '\n')
         return {}
+
+class Render:
+    id = 'POST:/render'
+    def handle_request(self, body):
+        inputfile = body['input']
+        outputfile = body['output']
+        volume = body['volume']
+        subprocess.run(['./sndtool', inputfile, outputfile, '0' , str(volume)])
 
 pattern_editor_page = File('pattern-editor.html', 'text/html')
 pattern_editor_page.path = '/'
 
 server_address = ('', int(sys.argv[-1]))
-httpd = HTTPServer(server_address, get_handler_class([pattern_editor_page], [SavePattern()]))
+httpd = HTTPServer(server_address, get_handler_class([pattern_editor_page], [SavePattern(), Render()]))
 httpd.serve_forever()
 httpd.server_close()
