@@ -81,9 +81,9 @@ float BasicOscillator_getValue(BasicOscillator * bo, enum OscType oscType);
  */
 float BasicOscillator_getValueFm(BasicOscillator * bo, enum OscType oscType, float fmAmount);
 /*
- * Sets oscillator frequency as Hz.
+ * Sets oscillator frequency as increment.
  */
-void BasicOscillator_setFrequency(BasicOscillator * bo, float f_Hz);
+void BasicOscillator_setFrequency(BasicOscillator * bo, float f);
 /*
  * Sets wavetable start position and playback length parameters. Parameters in range 0-1.
  * Position of 0 means the start of the buffer and 1 the end of the buffer.
