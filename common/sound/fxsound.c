@@ -20,8 +20,13 @@ int main(int argc, char **argv)
     puts("output wav");
     puts("time param");
     puts("depth param");
+    puts("optional: input gain");
     return 1;
   }
+  float input_gain = 1;
+  if (argc >= 6)
+    sscanf(argv[5], "%f", &input_gain);
+
 #ifdef MODFX_DRUMS_DEBUG
     extern void set_pattern(const uint8_t *p);
     static uint8_t pattern[17];
@@ -92,8 +97,8 @@ int main(int argc, char **argv)
       {
         float f[2];
         wav_get_normalized_linint(&w_in, (sample_i + i) * w_in_sr_ratio, f);
-        main_x[i * 2] = f[0];
-        main_x[i * 2 + 1] = f[1];
+        main_x[i * 2] = f[0] * input_gain;
+        main_x[i * 2 + 1] = f[1] * input_gain;
       }
       MODFX_PROCESS(main_x, main_y, sub_x, sub_y, bsize);
       for (int i = 0; i < bsize; i++)
