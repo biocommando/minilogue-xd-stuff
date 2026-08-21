@@ -151,7 +151,7 @@ all: PRE_ALL $(OBJS) $(OUTFILES) POST_ALL
 
 soundtool:
 	gcc -I$(UINCDIR) -I../common/sound -c $(UCSRC)
-	gcc -I../common/sound ../common/sound/fxsound.c ../common/wav_handler/wav_handler.c *.o -o soundtool -lm
+	gcc -I../common/sound ../common/sound/fxsound.c ../common/wav_handler/wav_handler.c *.o -o sndtool -lm
 
 PRE_ALL:
 
