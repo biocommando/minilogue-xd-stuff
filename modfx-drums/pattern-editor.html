@@ -62,6 +62,8 @@
     <hr />
     <div id="div-grid"></div>
     <input id="pattern-data" value="" style="width:100%" /><br /> <button onclick="loadPatternData()">Load</button>
+    <hr/>
+    <button onclick="fetch('/save-pattern', {method:'post', body: JSON.stringify({pattern: document.getElementById('pattern-data').value})})">Export to pattern.txt</button>
 
     <script>
         const nSteps = 16
