@@ -30,6 +30,8 @@ typedef struct
     int step_sz;
     SeqEvt evt[N_EVENTS];
     int n_evt;
+    float vol;
+    int length_sec;
 } Params;
 
 static void parse_args(Params *p, int argc, char **argv)
@@ -109,6 +111,14 @@ static void parse_args(Params *p, int argc, char **argv)
         {
             strcpy(p->fn, arg);
         }
+        if (sel == 'v')
+        {
+            p->vol = 0.01 * v;
+        }
+        if (sel == 'l')
+        {
+            p->length_sec = v;
+        }
     }
     if (p->n_evt == 0 && p->n_evt < N_EVENTS)
     {
@@ -144,7 +154,8 @@ static uint16_t note_and_fine_to_pitch(int note, float finetune)
 static void render_sound(Params *p)
 {
     struct wav_file wav;
-    create_wav_file(&wav, p->step_sz * (N_EVENTS + 1), 1, 16, k_samplerate);
+    int length_sec = p->length_sec ? p->length_sec * k_samplerate : p->step_sz * (N_EVENTS + 1);
+    create_wav_file(&wav, length_sec, 1, 16, k_samplerate);
     init_oscillator_module(p);
 
     BasicOscillator lfo;
@@ -183,7 +194,7 @@ static void render_sound(Params *p)
                 evt_i++;
             }
             BasicOscillator_calculateNext(&lfo);
-            float f = q31_to_f32(q31_buf[i]);
+            float f = q31_to_f32(q31_buf[i]) * p->vol;
             wav_set_normalized(&wav, sample_i, &f);
             sample_i++;
         }
@@ -204,6 +215,7 @@ int main(int argc, char **argv)
     memset(&p, 0, sizeof(p));
     strcpy(p.fn, "output.wav");
     p.step_sz = 60.0 / 4 / 120 * k_samplerate;
+    p.vol = 1;
     parse_args(&p, argc, argv);
     render_sound(&p);
     return 0;
