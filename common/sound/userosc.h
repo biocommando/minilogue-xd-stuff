@@ -75,3 +75,20 @@ static inline float osc_w0f_for_note(uint8_t note, uint8_t mod)
 
     return f;                   // f * k_samplerate_recipf;
 }
+
+static inline float osc_bl_sawf(float phase, uint8_t idx) {
+    return 2 * phase - 1;
+}
+
+static inline float osc_bl_sqrf(float phase, uint8_t idx) {
+    return phase < 0.5 ? 1.0f : -1.0f;
+}
+ 
+static inline float osc_bl_saw_idx(float note) { return 0; }
+static inline float osc_bl_sqr_idx(float note) { return 0; } 
+
+void OSC_INIT(uint32_t platform, uint32_t api);
+void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t frames);
+void OSC_NOTEON(const user_osc_param_t *const params);
+void OSC_NOTEOFF(const user_osc_param_t *const params);
+void OSC_PARAM(uint16_t index, uint16_t value);
