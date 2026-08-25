@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('manifest')
 parser.add_argument('-g', '--get', default='')
+parser.add_argument('-u', '--update-with', default=None)
 parser.add_argument('-v', '--set-version', default='')
 parser.add_argument('-d', '--dry-run', action='store_true')
 parser.add_argument('-V', '--verify', action='store_true')
@@ -50,6 +51,10 @@ if args.verify:
 
 if args.get:
     print(manifest['header'][args.get])
+    if args.update_with is not None:
+        modified = True
+        manifest['header'][args.get] = args.update_with
+        verify_manifest()
 
 if args.set_version:
     modified = True
