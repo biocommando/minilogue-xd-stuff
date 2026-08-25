@@ -1,4 +1,5 @@
 #include "usermodfx.h"
+#include "constants.h"
 #include "simple_oscillator.h"
 #include "synth_random.h"
 #include "flt.h"
@@ -6,7 +7,6 @@
 static SimpleOscillator wow_osc;
 static float wow_gain;
 
-#define DL_LEN 128
 static float delay_line[DL_LEN], dl_acc = 0, dl_val[2] = { 0, 0 };
 
 static uint16_t dl_idx = 0;
@@ -19,10 +19,8 @@ static float hum_gain = 1;
 static uint16_t hum_counter = 0;
 static uint32_t noise_gate_counter = 0;
 
-#define COMPR_THD 0.7
-#define COMPR_RAT 0.2
 #define SAMPLERATE 48000
-#define HUM_COUNTER_RESET (48000 / 50)
+#define HUM_COUNTER_RESET (48000 / HUM_FREQ_HZ)
 #define HUM_COUNTER_HALF_WAVE (HUM_COUNTER_RESET / 2)
 #define INPUT_NOISE_GATE_THD 1e-4
 
@@ -67,7 +65,7 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
     (void) platform;
     (void) api;
     init_filter(&lpf, 10000, SAMPLERATE);
-    wow_osc.frequency = 2.0f / 48000;
+    wow_osc.frequency = WOW_FREQ_HZ / (float)SAMPLERATE;
     wow_osc.phase = wow_osc.frequency;
 }
 
@@ -173,19 +171,19 @@ void MODFX_PARAM(uint8_t index, int32_t value)
     const float v = q31_to_f32(value);
     if (index == k_user_modfx_param_time)
     {
-        disturbance_gain = 0.2 + v * 1.2;
-        disturbance_prob = (uint8_t) (1.5 + 2 * v);
+        disturbance_gain = SPEED_DISTURBANCE_MIN + v * SPEED_DISTURBANCE_DELTA;
+        disturbance_prob = (uint8_t) (SPEED_DISTURBANCE_PROB_MIN + SPEED_DISTURBANCE_PROB_DELTA * v);
         pitch_noise_gain = v;
-        Kp = 0.06f - v * 0.03f;
-        wow_gain = 0.008f * v * v;
+        Kp = SPEED_KP_MIN - v * SPEED_KP_DELTA;
+        wow_gain = WOW_GAIN * v * v;
     }
     else if (index == k_user_modfx_param_depth)
     {
-        gain = 1 + v * v * 20;
-        out_gain = 1 / (.61 + 4.07 * v);
-        lpf_cutoff_max = 15000 - 10000 * v;
-        lpf_cutoff_mod_max = 6000 + get_log_scale_val(16000.0f / (1 << N_OCTAVES), v * 1.05);
-        hiss_gain = 0.2 + 1 * v;
-        hum_gain = 0.0005 + 0.001 * v * v;
+        gain = 1 + v * v * GAIN_MULT;
+        out_gain = 1 / (GAIN_COMP_RANGE_MIN + GAIN_COMP_RANGE_DELTA * v);
+        lpf_cutoff_max = FLT_CUT_MAX - FLT_CUT_DELTA * v;
+        lpf_cutoff_mod_max = FLT_CUT_MOD_MIN + get_log_scale_val((float)FLT_CUT_MOD_DELTA / (1 << N_OCTAVES), v * 1.05);
+        hiss_gain = HISS_MIN + HISS_DELTA * v;
+        hum_gain = HUM_MIN + HUM_DELTA * v * v;
     }
 }

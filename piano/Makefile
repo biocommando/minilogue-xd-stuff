@@ -150,6 +150,10 @@ all: PRE_ALL $(OBJS) $(OUTFILES) POST_ALL
 	@echo Done
 	@echo
 
+prepare:
+	rm -f project.mk
+	ln -s project.mk_$(VARIANT) project.mk
+
 chg_piano:
 	rm -f project.mk
 	ln -s project.mk_piano project.mk
