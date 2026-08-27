@@ -210,6 +210,27 @@ static void render_sound(Params *p)
 
 int main(int argc, char **argv)
 {
+    if (argc < 2)
+    {
+        printf("Usage: %s [arguments...]\n", argv[0]);
+        puts("File Output:");
+        puts("  o<path>  Specify the output file name (default output.wav)\n");
+        puts("Events:");
+        puts("  +<num>   Add a NOTE_ON event with the specified value");
+        puts("  -<num>   Add a NOTE_OFF event with the specified value");
+        puts("  _<num>   Add <num> EMPTY events (pads the event list)\n");
+        puts("Each argument configures one or more steps and increments");
+        puts("the sequence length by the number of configured steps");
+        puts("If no events are configured, uses a single event at the start of the file\n");
+        puts("Configuration:");
+        puts("  t<num>   Set tempo / step size based on BPM");
+        puts("  s<num>   Set shape type");
+        puts("  S<num>   Set secondary shape type");
+        puts("  p<num>   Set pitch LFO amount (value scaled by 0.01)");
+        puts("  h<num>   Set shape LFO amount (value scaled by 0.01)");
+        puts("  A..F<num> Set user parameter A through F to the specified value (no scaling)\n");
+        printf("Note: The total number of events cannot exceed %d.\n", N_EVENTS);
+    }
 
     Params p;
     memset(&p, 0, sizeof(p));
