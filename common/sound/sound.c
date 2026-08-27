@@ -224,11 +224,11 @@ int main(int argc, char **argv)
         puts("If no events are configured, uses a single event at the start of the file\n");
         puts("Configuration:");
         puts("  t<num>   Set tempo / step size based on BPM");
-        puts("  s<num>   Set shape type");
-        puts("  S<num>   Set secondary shape type");
+        puts("  s<num>   Set shape value");
+        puts("  S<num>   Set shift shape value");
         puts("  p<num>   Set pitch LFO amount (value scaled by 0.01)");
         puts("  h<num>   Set shape LFO amount (value scaled by 0.01)");
-        puts("  A..F<num> Set user parameter A through F to the specified value (no scaling)\n");
+        puts("  A..F<num> Set user parameter 1 through 6 to the specified value (no scaling)\n");
         printf("Note: The total number of events cannot exceed %d.\n", N_EVENTS);
     }
 
