@@ -7,7 +7,7 @@
         "prg_id": 0,
         "version": "1.2-0",
         "name": "e-gtr",
-        "num_param": 3,
+        "num_param": 4,
         "params": [
             [
                 "Attack",
@@ -23,6 +23,12 @@
             ],
             [
                 "Noise mix",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Decay",
                 0,
                 100,
                 "%"

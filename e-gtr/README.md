@@ -1,40 +1,22 @@
-## Synth voice
-A basic subtractive synth voice user oscillator for the **Korg Minilogue XD** multi-engine.
-
-## Architecture
-Models one limited synth voice. Features:
-- Oscillator with selectable waveform
-- Sub oscillator, fixed to -1 oct using the same waveform
-- "Moog" lowpass filter with cutoff and resonance
-- ADSR envelope for filter cutfoff
+## Electric guitar
+Electric guitar oscillator that tries to produce clean guitar tone as
+a basis for a distorted sound (so the idea is not to produce the best
+clean guitar sound). Works by having a sampled guitar waveform that is
+decayed away while a triangle wave waveform kicks in. Can use an
+optional additional noise transient. Uses 2 oscillators: either in 7 or 12
+semitones interval.
 
 ### Parameters
 
 #### Shape parameters
 - Shape:
-    * Filter cutoff
+    * Tone: left side = lowpass, right side = high pass
 - Shift + Shape:
-    * Filter resonance
+    * Distortion. Ideally, use a separate distortion model at the end of
+    the processing chain.
 
 #### User parameters
-- 1: Filter Envelope Attack length (0-4 sec)
-- 2: Filter Envelope Decay length (0-4 sec)
-- 3: Filter Envelope Sustain level
-- 4: Filter Envelope Release length (0-4 sec)
-- 5: Waveform:
-    * 1 = sawtooth
-    * 2 = square
-    * 3 = triangle
-    * 4 = sine (using 256 point wavetable with no interpolation, so it's kind of rough)
-    * 5 = pulse wavetable
-    * 6 = thin pulse wavetable
-    * 7 = sawtooth + noise wavetable
-    * 8 = noise wavetable 25% length
-    * 9 = noise wavetable 50% length
-    * 10 = noise wavetable 75% length
-    * 11 = noise wavetable 100% length
-    * 12 = noise (sub oscillator either 8 or 16 times downsampled noise)
-- 6: Sub oscillator mix
-	* -100 % = only sub oscillator (same waveform as main)
-	*    0 % = only main oscillator
-	* +100 % = only sub oscillator (square wave)
+- 1: Attack length (waveform mix transition speed)
+- 2: Interval: 1 = 7, 2 = 12 semitones
+- 3: Low-passed noise transient mix
+- 4: Overall volume decay (before distortion)

@@ -22,3 +22,9 @@
 #define USER_PARAM__Noise_mix__min 0
 #define USER_PARAM__Noise_mix__max 100
 
+// Decay
+// Range: 0 to 100 %
+#define USER_PARAM__Decay__idx k_user_osc_param_id4
+#define USER_PARAM__Decay__min 0
+#define USER_PARAM__Decay__max 100
+

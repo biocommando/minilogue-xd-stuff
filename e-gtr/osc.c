@@ -8,8 +8,9 @@
 
 #define ENV_LENGTH_RATIO 1.3f
 #define BASELINE_ATTACK_LENGTH_SEC 1.35f
-static struct filter_state tone_filter;
+static struct filter_state tone_filter, noise_filter;
 static AdsrEnvelope env_a, env_d, env_noise;
+static float overall_env_val = 1, overall_env = 1;
 #define N_OSC 2
 static BasicOscillator osc[N_OSC];
 
@@ -57,6 +58,7 @@ void OSC_INIT(uint32_t platform, uint32_t api)
     init_AdsrEnvelope(&env_a);
     init_AdsrEnvelope(&env_d);
     init_AdsrEnvelope(&env_noise);
+    init_filter(&noise_filter, 1000, k_samplerate);
     for (int i = 0; i < N_OSC; i++)
     {
       init_BasicOscillator(&osc[i], k_samplerate);
@@ -92,6 +94,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         float wt_out = BasicOscillator_getValue(&osc[0], OSC_WT) + BasicOscillator_getValue(&osc[1], OSC_WT);
         wt_out *= AdsrEnvelope_getEnvelope(&env_d) * 0.5 + shape_lfo;
         float noise_out = (1 - (synth_random()&0xFFFFFF) / (float)0x7FFFFF);
+        noise_out = process_filter(&noise_filter, noise_out);
         noise_out *= AdsrEnvelope_getEnvelope(&env_noise) * noise_mix;
 
         // tone bank
@@ -100,6 +103,10 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
           out = process_hp_filter(&tone_filter, out);
         else
           out = process_filter(&tone_filter, out);
+
+        // volume decay envelope
+        out *= overall_env_val;
+        overall_env_val *= overall_env;
 
         // distortion
         out *= dist_gain;
@@ -117,6 +124,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
 void OSC_NOTEON(const user_osc_param_t *const params)
 {
     update_inc(params);
+    overall_env_val = 1;
     AdsrEnvelope_trigger(&env_a);
     AdsrEnvelope_trigger(&env_d);
     AdsrEnvelope_trigger(&env_noise);
@@ -150,7 +158,13 @@ void OSC_PARAM(uint16_t index, uint16_t value)
             osc1_interval = value;
             break;
         case USER_PARAM__Noise_mix__idx:
-            noise_mix = value / 100.0 * 0.3;
+            noise_mix = value / 100.0 * 0.5;
+            break;
+        case USER_PARAM__Decay__idx:
+            {
+                const float v = value / 100.0;
+                overall_env = 1 - 0.0002 * v * v;
+            }
             break;
         case k_user_osc_param_shape:
             {
