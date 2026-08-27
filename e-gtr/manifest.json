@@ -1,0 +1,32 @@
+{
+    "header": {
+        "platform": "minilogue-xd",
+        "module": "osc",
+        "api": "1.1-0",
+        "dev_id": 0,
+        "prg_id": 0,
+        "version": "1.2-0",
+        "name": "e-gtr",
+        "num_param": 3,
+        "params": [
+            [
+                "Attack",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Interval",
+                0,
+                1,
+                ""
+            ],
+            [
+                "Noise mix",
+                0,
+                100,
+                "%"
+            ]
+        ]
+    }
+}
