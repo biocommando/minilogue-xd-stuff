@@ -1,5 +1,6 @@
 PROJ_BASE_PATH=$(readlink -f "$(dirname "${BASH_SOURCE[-1]}")/..")
-MANIFEST_TOOL=$PROJ_BASE_PATH/common/scripts/manifest_tool.py
+TOOLS_DIR=$PROJ_BASE_PATH/common/scripts/
+MANIFEST_TOOL=$TOOLS_DIR/manifest_tool.py
 
 function uuresolve {
 	if [ "$1" == "" ]
@@ -72,48 +73,88 @@ function uudist {
     echo copied $path to $path2
 }
 
+function uurelease_one {
+    p=$1
+    dest=$2
+    echo "+++++++++++++ Building $p +++++++++++++"
+    uumake $p
+    if [ "$?" != "0" ]
+    then
+      echo "<<$p>> Build failed"
+      return 1
+    fi
+    $MANIFEST_TOOL "$PROJ_BASE_PATH/$p/manifest.json" --get version --update-with $version >/dev/null
+    if [ "$?" != "0" ]
+    then
+      echo "<<$p>> Setting version failed"
+      return 1
+    fi
+    name=$(get_proj_manifest_name $p)
+    path="$PROJ_BASE_PATH/$p/$name.mnlgxdunit"
+    cp "$path" "$dest"
+    if [ "$?" != "0" ]
+    then
+      echo "<<$p>> Copying binary failed"
+      return 1
+    fi
+    cp "$PROJ_BASE_PATH/$p/README.md" $dest/README_$name.md
+    if [ "$?" != "0" ]
+    then
+      echo "<<$p>> Copying readme failed"
+      return 1
+    fi
+    module=$(get_proj_manifest_field $p module)
+    echo "- $name" >> $dest/README.md
+    echo "    - type: $module" >> $dest/README.md
+    echo "    - description: $(head -n 1 "$PROJ_BASE_PATH/$p/README.md")" >> $dest/README.md
+}
+
 function uurelease {
     version=$1
     dest=$PROJ_BASE_PATH/release-$version
+    if [ "$2" == "experimental" ]
+    then
+        dest=${dest}-experimental
+    fi
     rm -rf "$dest" "$dest.zip"
     mkdir -p "$dest"
-    ok=1
     echo "# A Collection of Korg Minilogue XD User Modules" > $dest/README.md
     echo "List of modules:" >> $dest/README.md
     for p in $(uulist | sort)
     do
-        echo "+++++++++++++ Building $p +++++++++++++"
-        $MANIFEST_TOOL "$PROJ_BASE_PATH/$p/manifest.json" --set-version $version
-        if [ "$?" != "0" ]
+        experimental=$($TOOLS_DIR/project_tool.py is_experimental "$PROJ_BASE_PATH/$p")
+        if [ "$experimental" != "$2" ]
         then
-          echo "<<$p>> Setting version failed"
-          return 1
+            continue
         fi
-        uumake $p
-        if [ "$?" != "0" ]
-        then
-          echo "<<$p>> Build failed"
-          ok=0
-          break
+        variants=$($TOOLS_DIR/project_tool.py variants "$PROJ_BASE_PATH/$p")
+        if [ "$variants" == "" ]; then
+            uurelease_one $p $dest $version
+            if [ "$?" != "0" ]
+            then
+              echo "<<$p>> Release failed"
+              return 1
+            fi
+        else
+            for variant in $variants
+            do
+                cd "$PROJ_BASE_PATH/$p"
+                make prepare VARIANT=$variant
+                if [ "$?" != "0" ]
+                then
+                  echo "<<$p>> Variant prepare failed for $variant"
+                  cd -
+                  return 1
+                fi
+                cd -
+                uurelease_one $p $dest $version
+                if [ "$?" != "0" ]
+                then
+                  echo "<<$p>> Release failed for variant $variant"
+                  return 1
+                fi
+            done
         fi
-        name=$(get_proj_manifest_name $p)
-        path="$PROJ_BASE_PATH/$p/$name.mnlgxdunit"
-        cp "$path" $dest
-        if [ "$?" != "0" ]
-        then
-          echo "<<$p>> Copying binary failed"
-          return 1
-        fi
-        cp "$PROJ_BASE_PATH/$p/README.md" $dest/README_$name.md
-        if [ "$?" != "0" ]
-        then
-          echo "<<$p>> Copying readme failed"
-          return 1
-        fi
-        module=$(get_proj_manifest_field $p module)
-        echo "- $name" >> $dest/README.md
-        echo "    - type: $module" >> $dest/README.md
-        echo "    - description: $(head -n 1 "$PROJ_BASE_PATH/$p/README.md")" >> $dest/README.md        
     done
     echo "# License" >> $dest/README.md
     echo "### Module code" >> $dest/README.md
@@ -121,11 +162,8 @@ function uurelease {
     echo "----" >> $dest/README.md
     echo "### Logue SDK" >> $dest/README.md
     cat $PROJ_BASE_PATH/../../../LICENSE >> $dest/README.md
-    if [ "$ok" == "1" ]
-    then
-        echo "Created release-$version directory succesfully, creating zip package"
-        zip -jr "$dest.zip" "$dest"
-    fi
+    echo "Created release-$version directory succesfully, creating zip package"
+    zip -jr "$dest.zip" "$dest"
 }
 
 function uuhelp {
