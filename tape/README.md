@@ -11,3 +11,9 @@ input ->
 - TIME parameter controls pitch related effects.
 - DEPTH parameter controls distortion and degradation.
 
+## Variants
+
+- tape
+	- emulates a low grade cassette that's completely worn out in its extreme settings
+- r2reel
+	- emulates a more high-end studio-grade reel-to-reel tape machine

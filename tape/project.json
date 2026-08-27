@@ -1,4 +1,4 @@
 {
-    "variants": ["default", "other"],
+    "variants": ["tape", "r2reel"],
     "experimental": false
 }

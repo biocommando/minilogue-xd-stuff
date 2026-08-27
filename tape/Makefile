@@ -150,6 +150,8 @@ all: PRE_ALL $(OBJS) $(OUTFILES) POST_ALL
 	@echo
 
 prepare:
+	sed -i 's/"name": "[^"]*"/"name": "$(VARIANT)"/' manifest.json
+	sed -i "s/PROJECT.*/PROJECT = $(VARIANT)/" project.mk
 	CONSTANT_SET=$(VARIANT) python3 ../common/scripts/gen_constants.py .
 
 soundtool:
