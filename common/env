@@ -3,15 +3,15 @@ TOOLS_DIR=$PROJ_BASE_PATH/common/scripts/
 MANIFEST_TOOL=$TOOLS_DIR/manifest_tool.py
 
 function uuresolve {
-	if [ "$1" == "" ]
-	then
-		touch /tmp/.minilogue-xd-stuff.uuresolve
-		cat /tmp/.minilogue-xd-stuff.uuresolve
-		return 0
-	fi
-	resolved=$(echo $1 | grep -o "[a-zA-Z0-9-]*")
-	echo $resolved > /tmp/.minilogue-xd-stuff.uuresolve
-	echo $resolved
+    if [ "$1" == "" ]
+    then
+        touch /tmp/.minilogue-xd-stuff.uuresolve
+        cat /tmp/.minilogue-xd-stuff.uuresolve
+        return 0
+    fi
+    resolved=$(echo $1 | grep -o "[a-zA-Z0-9-]*")
+    echo $resolved > /tmp/.minilogue-xd-stuff.uuresolve
+    echo $resolved
 }
 
 function uulist {
@@ -56,7 +56,7 @@ function get_proj_manifest_name {
 }
 
 function uudeploy {
-	proj=$(uuresolve "$1")
+    proj=$(uuresolve "$1")
     name=$(get_proj_manifest_name $proj)
     path="$PROJ_BASE_PATH/$proj/$name.mnlgxdunit"
     cp "$path" "$MINILOGUE_STUFF_DEPLOY_DIR"
@@ -64,7 +64,7 @@ function uudeploy {
 }
 
 function uudist {
-	proj=$(uuresolve "$1")
+    proj=$(uuresolve "$1")
     name=$(get_proj_manifest_name $proj)
     path="$PROJ_BASE_PATH/$proj/$name.mnlgxdunit"
     path2="$PROJ_BASE_PATH/$proj/dist/"
