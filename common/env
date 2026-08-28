@@ -103,6 +103,7 @@ function uurelease_one {
       echo "<<$p>> Copying readme failed"
       return 1
     fi
+    python3 $TOOLS_DIR/gen_html_cheat_sheet.py "$PROJ_BASE_PATH/$p/README.md" > $dest/cheat_sheet_$name.html
     module=$(get_proj_manifest_field $p module)
     echo "- $name" >> $dest/README.md
     echo "    - type: $module" >> $dest/README.md
