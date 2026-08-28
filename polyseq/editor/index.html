@@ -176,6 +176,8 @@
         <h1>MIDI setup</h1>
         Output
         <select id="outputDeviceSelect"></select>
+        Input
+        <select id="inputDeviceSelect"></select>
         <button onclick="runMidiSetup()">Accept</button>
     </div>
     <div id="editorDiv" style="display: none;">
@@ -212,6 +214,7 @@
         <button onclick="printEvents()">Print CC event list</button>
         <pre id="ccEventListPre"></pre>
         <button onclick="ccEventListPre.innerText=''">Clear list</button>
+        <button id="recButton" onclick="toggleRecording()">Record</button> Tempo (quantize last--first boundary to bar) <input value="120" id="qtztempo">
     </div>
 
     <script src="midi.js"></script>
@@ -223,10 +226,15 @@
             await devices.init()
             outputDeviceSelect.innerHTML =
                 devices.getOutputs().map(x => `<option value="${x.id}">${x.name}</option>`).join('')
+            inputDeviceSelect.innerHTML =
+                devices.getInputs().map(x => `<option value="${x.id}">${x.name}</option>`).join('')
         }
         let outputDevice
         function runMidiSetup() {
             outputDevice = devices.getDevice('output', outputDeviceSelect.value)
+            inputDevice = devices.getDevice('input', inputDeviceSelect.value)
+            inputDevice.onNoteOn = (channel, note, velocity) => record('on', note)
+            inputDevice.onNoteOff = (channel, note) => record('off', note)
             midiSetupDiv.style.display = 'none'
             editorDiv.style.display = ''
         }
@@ -255,6 +263,39 @@
         function printEvents() {
             ccEventListPre.innerText = convertSequence().join('\n')
         }
+
+        let recording = false
+        let recSequence = [], recTimeOffset
+        function toggleRecording() {
+            recording = !recording
+            if (recording) {
+                recButton.innerText = 'Stop recording'
+                recSequence = []
+            } else {
+                recButton.innerText = 'Record'
+                if (recSequence.length > 0) {
+                        const samplesPerQuarterNote = 48000 * 60 / Number(qtztempo.value)
+                        const fullBarSamples = samplesPerQuarterNote * 4
+                        const totalSeqSamples = recSequence.reduce((a, b) => a + b.delta, 0)
+                        const fullBars = Math.floor(totalSeqSamples / fullBarSamples)
+                        const quantizedDeltaToStart = fullBarSamples - (totalSeqSamples - fullBars * fullBarSamples)
+                        recSequence[recSequence.length - 1].delta = quantizedDeltaToStart
+                        document.getElementById('json-notes').value = JSON.stringify(recSequence, null, 2)
+                }
+            }
+        }
+        function record(eventType, note) {
+            if (!recording)
+                return
+            let time = Date.now() / 1000
+            if (recSequence.length > 0) {
+                const timeDelta = time - recTimeOffset
+                const timeDeltaSamples = Math.round(48000 * timeDelta)
+                recSequence[recSequence.length - 1].delta = timeDeltaSamples
+            }
+            recTimeOffset = time
+            recSequence.push({note, type: eventType, delta: 0})
+        } 
         init()
     </script>
 </body>
