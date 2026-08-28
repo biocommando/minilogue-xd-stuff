@@ -128,7 +128,7 @@ function uurelease {
         then
             continue
         fi
-        variants=$($TOOLS_DIR/project_tool.py variants "$PROJ_BASE_PATH/$p")
+        variants=$($TOOLS_DIR/project_tool.py variants "$PROJ_BASE_PATH/$p" | tac)
         if [ "$variants" == "" ]; then
             uurelease_one $p $dest $version
             if [ "$?" != "0" ]
