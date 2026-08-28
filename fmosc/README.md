@@ -25,14 +25,17 @@ You can modify the following parameters (see below for more details): operator 1
 #### User parameters
 Synth engine 1 is edited using parameter 1..3 and synth engine 2 using identical parameters 4..6. 
 
-- 1, 4: `S1 Ratio`, `S2 Ratio`:
+- 1: `S1 Ratio`:
     * Frequency ratio between operators 1 and 2, divided by 8. E.g. 16 = operator 2 frequency is 2 times the base frequency. 
-- 2, 5: `S1 ModAmt`, `S2 ModAmt`:
+- 2: `S1 ModAmt`:
     * Amount of frequency modulation from operator 2 to operator 1.
     * 0%: Default amount. Use 1% for no modulation.
-- 3, 6: `S1 Env`, `S2 Env` -100...100:
+- 3: `S1 Env`, `S2 Env` -100...100:
     * Envelope length that modulates the modulation amount.
     * 0 = no envelope modulation
     * over 0 = decay envelope
     * below 0 = attack+decay envelope
     * Maximum envelope time ~6 seconds.
+- 4: `S2 Ratio`: Similar to `S1 Ratio`
+- 5: `S1 ModAmt`: Similar to `S2 ModAmt`
+- 6: `S1 Env` similar to `S2 Env`

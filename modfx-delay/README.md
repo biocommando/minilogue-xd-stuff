@@ -5,3 +5,6 @@ the delay time is 125 ms. The maximum delay time is 1389 ms with samplerate
 of 4320 Hz. The bitdepth of the delay buffer is 12 bits.
 
 Can be used for experimental sounds.
+
+- TIME controls delay time
+- DEPTH controls feedback amount

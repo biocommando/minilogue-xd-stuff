@@ -1,4 +1,4 @@
-## Korg logue SDK: Sample/Granular User Oscillator
+## Sample/Granular User Oscillator
 A sample-playback and granular synthesis user oscillator
 
 ## Architecture

@@ -3,4 +3,3 @@ A simple drum machine intended for practice helper. Uses the same samples and sa
 
 - TIME parameter selects the pattern.
 - DEPTH parameter controls the mix volume. Setting depth to zero will reset the sequence so it can be used as a start/stop control.
-

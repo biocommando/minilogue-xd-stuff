@@ -25,11 +25,12 @@ in editor/seq.js documented.
 - 127, 0: Sequence end -> start play back
 
 ## Parameters
-- Waveform (saw, square, triangle)
-- Decay envelope length
-- Split
+- Shape: playback speed
+- Shift + Shape: Reserved for sequence data entry 
+- 1: Waveform (saw, square, triangle)
+- 2: Decay envelope length
+- 3: Split
     - less than 0: notes below this value don't play sound from this oscillator
     - more than 0: notes above this value don't play sound from this oscillator
-- Tracking: 1 = keyboard tracking on, 2 = off
-- Shape: playback speed
+- 4: Tracking: 1 = keyboard tracking on, 2 = off
 

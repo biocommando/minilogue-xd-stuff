@@ -1,4 +1,4 @@
-## Korg logue SDK: Drum Machine User Oscillator
+## Drum Machine
 A drum machine user oscillator that has lo-fi samples and synthesized drums.
 
 ## Architecture
