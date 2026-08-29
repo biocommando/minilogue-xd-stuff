@@ -2,8 +2,9 @@
 #include "moog_filter_int.h"
 
 static MicrotrackerMoog filter;
+static float resonance_gain_compensation;
 
-#define OVERSAMPLING 4
+#define OVERSAMPLING 2
 
 void MODFX_INIT(uint32_t platform, uint32_t api)
 {
@@ -37,7 +38,7 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
             input_i16 = 0;
         }
         float output = output_i16 / (float)0x7FFF;
-        output *= OVERSAMPLING;
+        output *= OVERSAMPLING * resonance_gain_compensation;
         *(y++) = output;
         *(y++) = output;
         x += 2;
@@ -50,6 +51,7 @@ void MODFX_PARAM(uint8_t index, int32_t value)
     if (index == k_user_modfx_param_time)
     {
         MicrotrackerMoog_setResonance(&filter, v);
+        resonance_gain_compensation = 1 + 4.6 * v;
     }
     else if (index == k_user_modfx_param_depth)
     {
