@@ -2,7 +2,6 @@
 #include "moog_filter_int.h"
 
 static MicrotrackerMoog filter;
-struct filter_state bl_filter[2];
 
 #define OVERSAMPLING 4
 
