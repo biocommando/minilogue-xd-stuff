@@ -78,7 +78,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         float out;
         if (noise_on)
         {
-            const float n = (synth_random() & 0xFFFFF) / ((float)0xFFFFF);
+            const float n = (synth_random() & 0xFFFFF) / ((float)0x7FFFF) - 1;
             out = n * main_mix;
             if (update_sub_noise == 0)
                 last_noise = n;
