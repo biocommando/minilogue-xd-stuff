@@ -91,20 +91,23 @@ function uurelease_one {
     fi
     name=$(get_proj_manifest_name $p)
     path="$PROJ_BASE_PATH/$p/$name.mnlgxdunit"
-    cp "$path" "$dest"
+
+    module=$(get_proj_manifest_field $p module)
+    mkdir -p "$dest"/$module/doc
+
+    cp "$path" "$dest"/$module
     if [ "$?" != "0" ]
     then
       echo "<<$p>> Copying binary failed"
       return 1
     fi
-    cp "$PROJ_BASE_PATH/$p/README.md" $dest/README_$name.md
+    cp "$PROJ_BASE_PATH/$p/README.md" $dest/$module/doc/README_$name.md
     if [ "$?" != "0" ]
     then
       echo "<<$p>> Copying readme failed"
       return 1
     fi
-    python3 $TOOLS_DIR/gen_html_cheat_sheet.py "$PROJ_BASE_PATH/$p/README.md" > $dest/cheat_sheet_$name.html
-    module=$(get_proj_manifest_field $p module)
+    python3 $TOOLS_DIR/gen_html_cheat_sheet.py "$PROJ_BASE_PATH/$p/README.md" > $dest/$module/doc/cheat_sheet_$name.html
     echo "- $name" >> $dest/README.md
     echo "    - type: $module" >> $dest/README.md
     echo "    - description: $(head -n 1 "$PROJ_BASE_PATH/$p/README.md")" >> $dest/README.md
