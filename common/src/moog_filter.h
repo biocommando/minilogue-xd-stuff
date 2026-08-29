@@ -17,6 +17,7 @@ typedef struct
     float cutoff, cutmod, coCalc;
     float resonance;
     float sampleRate;
+    float sampleRateCoRatio;
 } MicrotrackerMoog;
 
 /*
