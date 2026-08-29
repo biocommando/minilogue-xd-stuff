@@ -1,1 +1,1 @@
-project.mk_choir
+project.mk_piano
