@@ -1,0 +1,26 @@
+{
+    "header": {
+        "platform": "minilogue-xd",
+        "module": "osc",
+        "api": "1.1-0",
+        "dev_id": 0,
+        "prg_id": 0,
+        "version": "1.3-0",
+        "name": "nearctic",
+        "num_param": 2,
+        "params": [
+            [
+                "Osc1 mix",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Osc2 mix",
+                0,
+                100,
+                "%"
+            ]
+        ]
+    }
+}
