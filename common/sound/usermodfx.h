@@ -57,7 +57,7 @@ typedef int32_t q31_t;
 #define f32_to_q31(f)   ((q31_t)((float)(f) * (float)0x7FFFFFFF))
 
 #define __fast_inline
-
+#define __sdram
 
 static inline float midi_note_to_increment(int note)
 {
