@@ -75,7 +75,7 @@ function uudist {
 
 function uurelease_one {
     p=$1
-    dest=$2
+    onedest=$2
     echo "+++++++++++++ Building $p +++++++++++++"
     uumake $p
     if [ "$?" != "0" ]
@@ -93,47 +93,40 @@ function uurelease_one {
     path="$PROJ_BASE_PATH/$p/$name.mnlgxdunit"
 
     module=$(get_proj_manifest_field $p module)
-    mkdir -p "$dest"/$module/doc
+    mkdir -p "$onedest"/$module/doc
 
-    cp "$path" "$dest"/$module
+    cp "$path" "$onedest"/$module
     if [ "$?" != "0" ]
     then
       echo "<<$p>> Copying binary failed"
       return 1
     fi
-    cp "$PROJ_BASE_PATH/$p/README.md" $dest/$module/doc/README_$name.md
+    cp "$PROJ_BASE_PATH/$p/README.md" $onedest/$module/doc/README_$name.md
     if [ "$?" != "0" ]
     then
       echo "<<$p>> Copying readme failed"
       return 1
     fi
-    python3 $TOOLS_DIR/gen_html_cheat_sheet.py "$PROJ_BASE_PATH/$p/README.md" > $dest/$module/doc/cheat_sheet_$name.html
-    echo "- $name" >> $dest/README.md
-    echo "    - type: $module" >> $dest/README.md
-    echo "    - description: $(head -n 1 "$PROJ_BASE_PATH/$p/README.md")" >> $dest/README.md
+    python3 $TOOLS_DIR/gen_html_cheat_sheet.py "$PROJ_BASE_PATH/$p/README.md" > $onedest/$module/doc/cheat_sheet_$name.html
+    echo "- $name" >> $onedest/README.md
+    echo "    - type: $module" >> $onedest/README.md
+    echo "    - description: $(head -n 1 "$PROJ_BASE_PATH/$p/README.md")" >> $onedest/README.md
 }
 
 function uurelease {
     version=$1
     dest=$PROJ_BASE_PATH/release-$version
-    if [ "$2" == "experimental" ]
-    then
-        dest=${dest}-experimental
-    fi
     rm -rf "$dest" "$dest.zip"
     mkdir -p "$dest"
+    mkdir -p "$dest/experimental"
     echo "# A Collection of Korg Minilogue XD User Modules" > $dest/README.md
     echo "List of modules:" >> $dest/README.md
     for p in $(uulist | sort)
     do
         experimental=$($TOOLS_DIR/project_tool.py is_experimental "$PROJ_BASE_PATH/$p")
-        if [ "$experimental" != "$2" ]
-        then
-            continue
-        fi
         variants=$($TOOLS_DIR/project_tool.py variants "$PROJ_BASE_PATH/$p" | tac)
         if [ "$variants" == "" ]; then
-            uurelease_one $p $dest $version
+            uurelease_one $p "$dest/$experimental" $version
             if [ "$?" != "0" ]
             then
               echo "<<$p>> Release failed"
@@ -151,7 +144,7 @@ function uurelease {
                   return 1
                 fi
                 cd -
-                uurelease_one $p $dest $version
+                uurelease_one $p "$dest/$experimental" $version
                 if [ "$?" != "0" ]
                 then
                   echo "<<$p>> Release failed for variant $variant"
