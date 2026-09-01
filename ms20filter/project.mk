@@ -2,13 +2,15 @@
 # Project Customization
 # #############################################################################
 
+COMMON = ../common/src
+
 PROJECT = ms20filter
 
-UCSRC = main.c ms20_filter.c
+UCSRC = main.c $(COMMON)/ms20_filter.c
 
 UCXXSRC =
 
-UINCDIR = 
+UINCDIR = $(COMMON)
 
 UDEFS = 
 
