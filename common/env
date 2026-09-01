@@ -63,16 +63,6 @@ function uudeploy {
     echo copied $path to "$MINILOGUE_STUFF_DEPLOY_DIR"
 }
 
-function uudist {
-    proj=$(uuresolve "$1")
-    name=$(get_proj_manifest_name $proj)
-    path="$PROJ_BASE_PATH/$proj/$name.mnlgxdunit"
-    path2="$PROJ_BASE_PATH/$proj/dist/"
-    mkdir -p "$path2"
-    cp "$path" "$path2"
-    echo copied $path to $path2
-}
-
 function uurelease_one {
     p=$1
     onedest=$2
@@ -170,7 +160,6 @@ function uuhelp {
     echo "  uumake <proj> -- runs make, checks manifest.json"
     echo "                   and runs make install for the selected project"
     echo "  uudeploy <proj> -- copies the selected project to MINILOGUE_STUFF_DEPLOY_DIR"
-    echo "  uudist <proj> -- copies the built binary to dist/"
     echo "  uurelease <version> -- creates release package with the version number"
     echo "<proj> parameter can be omitted to use the previously used value"
 }
