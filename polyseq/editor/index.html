@@ -205,7 +205,6 @@
         <h1>Transpone</h1>
 
         Transpone semitones <input value="0" id="offset-semis">
-        <input type="checkbox" id="first-note-center"> Make first note the center note in keyboard tracking mode
 
         <h1>JSON note listing</h1>
         <textarea id="json-notes" rows="20" cols="80"></textarea>
@@ -241,8 +240,7 @@
         function convertSequence() {
             const sequence = JSON.parse(document.getElementById('json-notes').value)
             const semiOffset = Number(document.getElementById('offset-semis').value)
-            const useCentering = document.getElementById('first-note-center').checked
-            const ccList = getFullSequence(sequence, semiOffset, useCentering)
+            const ccList = getFullSequence(sequence, semiOffset)
             return ccList.map(val => {
                 return val
             })
