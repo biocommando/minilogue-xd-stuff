@@ -59,6 +59,8 @@ typedef int32_t q31_t;
 #define __fast_inline
 #define __sdram
 
+#define fasterpow2f(x) powf(2, x)
+
 static inline float midi_note_to_increment(int note)
 {
     return (float) (440.0 * pow(2, (note - 69) / 12.0)) / k_samplerate * 2;
