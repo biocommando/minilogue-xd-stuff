@@ -1,6 +1,8 @@
 ## Korg logue SDK: Collection of user oscillators and effects
 User oscillators and effects for the **Korg Minilogue XD** multi-engine, built using the official C/C++ **logue-sdk**.
 
+Demonstration video available on [Youtube](https://youtu.be/LoRF9eusM-s).
+
 ## Building / binary distribution
 To build, use the **Minilogue SDK**. To use the same workflow as I, use the legacy building method and place this repository right under `logue-sdk/platform/minilogue-xd`. You can run `make` from within each of the project directories.
 
