@@ -113,7 +113,7 @@ static inline void update_inc(const user_osc_param_t *const params)
     
     uint32_t note = (params->pitch) >> 8;
     if (note + 1 >= MIDIMAPPING_SZ)
-        note = MIDIMAPPING_SZ - 2;    
+        note = MIDIMAPPING_SZ - 2;
     const float factor = (params->pitch & 0xFF) / (float)0xFF;
     NearcticFilter_setCutoff(&filter, midimapping[note] + (midimapping[note + 1] - midimapping[note]) * factor);
 }
@@ -169,7 +169,7 @@ void OSC_PARAM(uint16_t index, uint16_t value)
             resonance = 0.5 + 0.5 * param_val_to_f32(value);
             break;
         case k_user_osc_param_shiftshape:
-            noise_mix = param_val_to_f32(value);
+            noise_mix = 0.01 + 0.99 * param_val_to_f32(value);
             break;
         default:
             break;
