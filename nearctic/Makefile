@@ -150,6 +150,9 @@ all: PRE_ALL $(OBJS) $(OUTFILES) POST_ALL
 	@echo Done
 	@echo
 
+soundtool:
+	gcc -I$(UINCDIR) -I../common/sound -c $(UCSRC) ../common/src/basic_oscillator.c ../common/src/synth_random.c
+	gcc -I$(UINCDIR) -I../common/sound ../common/sound/sound.c ../common/wav_handler/wav_handler.c *.o -o sndtool -lm
 
 PRE_ALL:
 

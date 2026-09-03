@@ -16,7 +16,8 @@ void OSC_INIT(uint32_t platform, uint32_t api)
     (void) api;
     NearcticFilter_init(&filter, k_samplerate);
 }
-static const float midimapping[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+#define MIDIMAPPING_SZ 109
+static const float midimapping[MIDIMAPPING_SZ] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 1e-05, 
 1e-05, 
 1e-05, 
@@ -111,8 +112,8 @@ static inline void update_inc(const user_osc_param_t *const params)
     osc[1].frequency = inc * 0.5;
     
     uint32_t note = (params->pitch) >> 8;
-    if (note + 1 > sizeof(midimapping) / sizeof(float))
-        return;    
+    if (note + 1 >= MIDIMAPPING_SZ)
+        note = MIDIMAPPING_SZ - 2;    
     const float factor = (params->pitch & 0xFF) / (float)0xFF;
     NearcticFilter_setCutoff(&filter, midimapping[note] + (midimapping[note + 1] - midimapping[note]) * factor);
 }
