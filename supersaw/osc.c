@@ -102,9 +102,11 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
 
 void OSC_NOTEON(const user_osc_param_t *const params)
 {
-    if (!first_note_on)
+     // OSC_CYCLE is only called when the voice is on, so only the second
+     // time here we'll get a bit better random init value
+    if (first_note_on < 2)
     {
-        first_note_on = 1;
+        first_note_on++;
         synth_random_reset(synth_random_init_value + params->pitch);
     }
     gate_pattern_i = gate_pattern_len - 1;
