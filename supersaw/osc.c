@@ -36,8 +36,6 @@ struct filter_state hpf = { 0, 0, 0, 0 };
 
 static uint8_t hpf_enabled = 0;
 
-#define RANDOM() ((synth_random()&0xFFFFF)/(float)0xFFFFF)
-
 void OSC_INIT(uint32_t platform, uint32_t api)
 {
     (void) platform;
@@ -113,7 +111,7 @@ void OSC_NOTEON(const user_osc_param_t *const params)
     gate_mode = 1;
     for (int i = 0; i < N_OSC; i++)
     {
-        oscs[i].phase = RANDOM() * ph_rand;
+        oscs[i].phase = synth_randomf() * ph_rand;
         drift_acc[i] = synth_random();
     }
 }

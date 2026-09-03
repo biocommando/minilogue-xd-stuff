@@ -131,7 +131,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
 
     OSC_LOOP(y, yn, frames)
     {
-        const float n = (synth_random() & 0xFFFFF) / ((float)0x7FFFF) - 1;
+        const float n = synth_random_noise();
         float out = n * noise_mix;
         for (int o = 0; o < 2; o++)
         {

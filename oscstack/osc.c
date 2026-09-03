@@ -58,7 +58,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
                 o *= amp_mult;
             out += o;
         }
-        out += (((float) (synth_random() & 0xFFFFF)) / (float)0x7FFFF - 1) * noise_mix;
+        out += synth_random_noise() * noise_mix;
 
         *(y++) = safe_f32_to_q31(out);
     }

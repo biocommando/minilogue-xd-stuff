@@ -42,7 +42,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         float out = 0;
         BasicOscillator_calculateNext(&osc);
         out += BasicOscillator_getValue(&osc, waveform) * osc_mix;
-        out += (float) (synth_random() % 100000) * 0.00001f * noise_mix;
+        out += synth_random_noise() * noise_mix;
         out *= 1 - shape_lfo;
         if (!note_is_on)
             out = 0;

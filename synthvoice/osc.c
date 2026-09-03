@@ -37,9 +37,9 @@ void OSC_INIT(uint32_t platform, uint32_t api)
         {
             float y;
             if (wi == WT_TYPE_NOISE)
-                y = 2 * ((synth_random() & 0xFFFF) / (float) 0xFFFF - 0.5);
+                y = synth_random_noise();
             else if (wi == WT_TYPE_NOISE_SAW)
-                y = 2 * ((i / (float) WT_LEN - 0.5) + (synth_random() & 0xFFFF) / (float) 0xFFFF - 0.5);
+                y = 2 * ((i / (float) WT_LEN - 0.5) + synth_randomf() - 0.5);
             else if (wi == WT_TYPE_PULSE)
                 y = i > 10 ? 1 : -1;
             else if (wi == WT_TYPE_THIN_PULSE)
@@ -78,7 +78,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         float out;
         if (noise_on)
         {
-            const float n = (synth_random() & 0xFFFFF) / ((float)0x7FFFF) - 1;
+            const float n = synth_random_noise();
             out = n * main_mix;
             if (update_sub_noise == 0)
                 last_noise = n;

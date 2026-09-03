@@ -58,7 +58,7 @@ inline void BasicOscillator_setSamplerate(BasicOscillator *bo, int rate)
 
 void BasicOscillator_randomizePhase(BasicOscillator *bo, float rndAmount)
 {
-    bo->phase = (float) (synth_random() % 100000) * 0.00001f;
+    bo->phase = synth_randomf();
     bo->phase *= rndAmount;
 }
 

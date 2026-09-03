@@ -93,7 +93,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         tri_out *= AdsrEnvelope_getEnvelope(&env_a) * 0.5;
         float wt_out = BasicOscillator_getValue(&osc[0], OSC_WT) + BasicOscillator_getValue(&osc[1], OSC_WT);
         wt_out *= AdsrEnvelope_getEnvelope(&env_d) * 0.5 + shape_lfo;
-        float noise_out = (1 - (synth_random()&0xFFFFFF) / (float)0x7FFFFF);
+        float noise_out = synth_random_noise();
         noise_out = process_filter(&noise_filter, noise_out);
         noise_out *= AdsrEnvelope_getEnvelope(&env_noise) * noise_mix;
 
