@@ -36,28 +36,20 @@ static uint8_t patterns[N_PATTERNS][N_STEPS + 1] = {
     {21, 4, 22, 4, 21, 5, 22, 20, 21, 4, 22, 4, 21, 38, 54, 22, 2}, // rock 1
     {5, 52, 6, 52, 5, 1, 6, 52, 5, 20, 6, 20, 36, 1, 38, 70, 2}, // rock 2
     {5, 4, 20, 4, 6, 4, 20, 9, 68, 69, 118, 68, 4, 9, 54, 36, 2}, // slow beat
-    {113, 40, 0, 136, 113, 0, 136, 0, 115, 0, 136, 0, 113, 136, 0, 136, 4}, // pop 1
+    {17, 4, 19, 4, 17, 4, 19, 4, 17, 4, 19, 4, 17, 4, 19, 21, 2}, // 4 on the floor
     {65, 20, 3, 20, 1, 20,  3, 20, 65, 20, 3, 20, 1, 20, 3, 53, 2}, // pop 2
-    //{21, 2, 5, 34, 21, 2, 5, 34, 21, 2, 5, 34, 87, 34, 7, 50, 2}, // humppa
+    {113, 40, 0, 136, 113, 0, 136, 0, 115, 0, 136, 0, 113, 136, 0, 136, 4}, // pop 1
     {21, 1, 4, 40, 22, 72, 5, 24, 4, 8, 5, 88, 22, 40, 22, 88, 4}, // funky rock
     {21, 100, 20, 100, 22, 100, 21, 100, 20, 100, 21, 100, 54, 52, 54, 54, 4}, // pitch var hh beat
     {21, 36, 148, 36, 148, 36, 148, 164, 86, 36, 148, 36, 148, 36, 148, 164, 4}, // fast hats, slow kick snare
     {21, 33, 136, 1, 22, 0, 1, 136, 21, 136, 1, 0, 22, 8, 1, 136, 4}, // straight rock with percs
     {21, 8, 4, 1, 6, 40, 21, 2, 5, 8, 21, 40, 6, 162, 69, 40, 4}, // funky rock with percs
     {21, 36, 44, 36, 22, 36, 13, 36, 20, 36, 13, 36, 22, 36, 44, 38, 4}, // rocky hihats
-    {17, 4, 19, 4, 17, 4, 19, 4, 17, 4, 19, 4, 17, 4, 19, 21, 2}, // 4 on the floor
     {21, 0, 5, 0, 22, 0, 4, 34, 4, 130, 5, 1, 22, 0, 4, 170, 4}, // amen
     {101, 4, 101, 4, 22, 4, 4, 38, 4, 134, 101, 38, 22, 101, 4, 134, 4}, // funky
     {51, 0, 164, 0, 162, 0, 164, 0, 162, 0, 164, 0, 162, 0, 164, 0, 4}, // metronome 2
     {30, 0, 8, 0, 8, 0, 8, 0, 28, 0, 8, 0, 8, 0, 8, 0, 2}, // metronome
 };
-
-static __sdram int8_t looper[128 * 1024 - 256];
-static uint32_t looper_idx;
-#define LOOPER_IDLE 0
-#define LOOPER_PLAY 1
-#define LOOPER_REC 2
-static uint8_t looper_mode;
 
 // Sample playback
 
@@ -86,6 +78,12 @@ static inline float compressed_osc_get(struct compressed_osc *osc)
     return (word & 0x8000) ? -s : s;
 }
 
+static __sdram int8_t looper[128 * 1024 - sizeof(osc)];
+static uint32_t looper_idx;
+#define LOOPER_IDLE 0
+#define LOOPER_PLAY 1
+#define LOOPER_REC 2
+static uint8_t looper_mode;
 
 static uint32_t seq_sample = 0, next_seq_trig = 0, seq_pos = 0,
     tempo = 0, step_len = 0, seq_len = 0;
@@ -155,11 +153,12 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
     for (uint32_t i = 0; i < frames; i++)
     {
         float output = 0;
+        const float abs_input = *x > 0 ? *x : -*x;
         if (wait_thd_cross == WAIT_THD_CROSS_ACTIVE)
         {
-            if (*x > seq_trig_thd || *x < -seq_trig_thd)
+            if (abs_input > seq_trig_thd)
             {
-                wait_thd_cross = 0;
+                wait_thd_cross = WAIT_THD_CROSS_IDLE;
             }
             *(y++) = *(x++);
             *(y++) = *(x++);
@@ -207,32 +206,31 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
         output *= vol;
         output += blip();
         vol *= env;
-        if (looper_idx < sizeof(looper) * 2)
+        // 32 kHz sampling rate will allow recording 4 bar length
+        // loop for all tempos down to 58.8 bpm.
+        // No interpolation etc., we're already working really close
+        // to size limits.
+        const uint32_t looper_idx_32khz = looper_idx * 2 / 3;
+        if (looper_idx_32khz < sizeof(looper))
         {
-            // 32 kHz sampling rate will allow recording 4 bar length
-            // loop for all tempos down to 58.8 bpm.
-            // No interpolation etc., we're already working really close
-            // to size limits.
-            const uint32_t actual_idx = looper_idx * 32 / 48;
             if (looper_mode == LOOPER_PLAY && gain > 0.001f)
             {
-                output += looper[actual_idx] / 127.0f;
+                output += looper[looper_idx_32khz] / 127.0f;
             }
             else if (looper_mode == LOOPER_REC)
             {
-                looper[actual_idx] = 127 * (*x);
+                looper[looper_idx_32khz] = 127 * (*x);
             }
             looper_idx++;
         }
-        if (wait_thd_cross == WAIT_THD_CROSS_ARMED && *x > seq_trig_thd)
-            seq_trig_thd = *x;
-        /*
-        // Size optimization... I think positive peak should be
-        // enough in most cases, we use both polarities for
-        // triggering though.
-        else if (*x < -seq_trig_thd)
-            seq_trig_thd = -*x;
-        */
+        if (wait_thd_cross == WAIT_THD_CROSS_ARMED)
+        {
+            // try to track the actual noise floor by letting any
+            // accidental played notes die out eventually
+            seq_trig_thd *= 0.99995f;
+            if (abs_input > seq_trig_thd)
+                seq_trig_thd = abs_input;
+        }
         *(y++) = output + *(x++);
         *(y++) = output + *(x++);
     }
@@ -283,6 +281,7 @@ void MODFX_PARAM(uint8_t index, int32_t value)
             {
                 wait_thd_cross = WAIT_THD_CROSS_ACTIVE;
                 seq_trig_thd *= 2;
+                blip_counter = 0;
             }
         }
         else if (gain >= 0.001f && v < 0.001f)
@@ -291,7 +290,7 @@ void MODFX_PARAM(uint8_t index, int32_t value)
             {
                 halt_timeout_counter = 48000;
                 halt_counter = 0;
-                wait_thd_cross = 0;
+                wait_thd_cross = WAIT_THD_CROSS_IDLE;
             }
             halt_counter++;
             if (halt_counter == 2)
