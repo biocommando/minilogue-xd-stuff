@@ -205,7 +205,7 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
             output += compressed_osc_get(&osc[i]) * osc[i].mix;
         }
         output *= vol;
-        output += blip() * gain;
+        output += blip();
         vol *= env;
         if (looper_idx < sizeof(looper) * 2)
         {
@@ -224,18 +224,15 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
             }
             looper_idx++;
         }
-        if (halt_timeout_counter > 0)
-        {
-            if (*x > seq_trig_thd)
-                seq_trig_thd = *x;
-            /*
-            // Size optimization... I think positive peak should be
-            // enough in most cases, we use both polarities for
-            // triggering though.
-            else if (*x < -seq_trig_thd)
-                seq_trig_thd = -*x;
-            */
-        }
+        if (wait_thd_cross == WAIT_THD_CROSS_ARMED && *x > seq_trig_thd)
+            seq_trig_thd = *x;
+        /*
+        // Size optimization... I think positive peak should be
+        // enough in most cases, we use both polarities for
+        // triggering though.
+        else if (*x < -seq_trig_thd)
+            seq_trig_thd = -*x;
+        */
         *(y++) = output + *(x++);
         *(y++) = output + *(x++);
     }
@@ -274,6 +271,8 @@ void MODFX_PARAM(uint8_t index, int32_t value)
             looper_mode = LOOPER_PLAY;
         if (pattern_idx == 0)
             looper_mode = LOOPER_IDLE;
+        seq_trig_thd = 0;
+        wait_thd_cross = WAIT_THD_CROSS_IDLE;
     }
     else if (index == k_user_modfx_param_depth)
     {
@@ -283,6 +282,7 @@ void MODFX_PARAM(uint8_t index, int32_t value)
             if (wait_thd_cross == WAIT_THD_CROSS_ARMED)
             {
                 wait_thd_cross = WAIT_THD_CROSS_ACTIVE;
+                seq_trig_thd *= 2;
             }
         }
         else if (gain >= 0.001f && v < 0.001f)
@@ -294,11 +294,10 @@ void MODFX_PARAM(uint8_t index, int32_t value)
                 wait_thd_cross = 0;
             }
             halt_counter++;
-            if (halt_counter == 3)
+            if (halt_counter == 2)
             {
                 halt_counter = 0;
                 halt_timeout_counter = 0;
-                seq_trig_thd *= 0.5;
                 wait_thd_cross = WAIT_THD_CROSS_ARMED;
                 // 0:beep, 1:rest, 2:beep, 3:rest, 4:beep
                 blip_counter = BLIP_MUTE_MASK * 5;
