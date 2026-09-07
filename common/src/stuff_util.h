@@ -12,3 +12,6 @@ static inline int32_t safe_f32_to_q31(float f) {
 	q31_t *__restrict var_name = (q31_t *) (yn); \
     const q31_t *var_name##_e = var_name + (frames); \
     for (; var_name != var_name##_e;)
+
+#define osc_w0f_from_params(params) \
+    osc_w0f_for_note(((params)->pitch) >> 8, (params)->pitch & 0xFF)
