@@ -10,15 +10,21 @@ The beat is synced to tempo. The playback features start/stop/trigger on
 input via knob macros.
 
 In addition to the drum machine, the effect contains a looper that
-allows recording ~4.1 seconds of audio into a loop that is synchronized
-to the drum beat. The recorded audio is in 8-bit / 32 kHz format which
-is very low quality but perfectly usable for jamming. 4.1 seconds is
-enough for recording a 4-bar sequence for all tempos down to ~59 bpm.
+allows recording up to 5.46 seconds of audio into a loop that is synchronized
+to the drum beat. The recorded audio is in 8-bit variable samplerate format
+which is very low quality but perfectly usable for jamming. The looper
+uses variable samplerate for tempos 87.9 ... 175.8 bpm to allow recording
+a full 2-bar loop. For tempos below 87.9 bpm the samplerate is fixed
+to 24 kHz which is enough for at least 1-bar loops for the full valid
+tempo range and for tempos above 175.8 bpm the samplerate is fixed to
+full 48 kHz (the remainded of the buffer will just be unused).
 
 - TIME parameter selects the pattern and controls the looper. Pattern
-  change is indicated by playing back a short beep sound. Patterns:
-  * 1 rock 1 -- 2 bars
+  change is indicated by playing back a short beep sound, and a lower beep
+  sound is used for 2-bar patterns. Patterns:
+  * 0 non-accented metronome -- 1 bar
 	* Selecting this pattern will stop looper playback.
+  * 1 rock 1 -- 2 bars
   * 2 rock 2 -- 2 bars
   * 3 slow beat -- 2 bars
   * 4 4 on the floor -- 2 bars
@@ -32,11 +38,11 @@ enough for recording a 4-bar sequence for all tempos down to ~59 bpm.
   * 12 rocky hihats -- 1 bar
   * 13 amen break -- 1 bar
   * 14 funky drummer -- 1 bar
-  * 15 metronome 2 -- 4 bars
-  * 16 metronome -- 8 bars
+  * 15 metronome 2 -- 1 bar
+  * 16 metronome -- 2 bars
 	* Selecting this pattern will start recording a loop. If loop time
 	  runs out before the beat loops, the recording will be just cut.
-	  The loop is played back whenever any of the patterns 2...15 is
+	  The loop is played back whenever any of the patterns 1...15 is
 	  selected. Note that this pattern is 2 bars so if you use the whole
 	  2 bars of recording time, you'll need to select one of the 2-bar
 	  patterns to play it back completely (otherwise only half will play).
@@ -56,5 +62,8 @@ enough for recording a 4-bar sequence for all tempos down to ~59 bpm.
     When the input trigger monitoring is armed (but not yet active), the
     effect monitors the input level and tries to detect the noise floor.
     If you happen to play notes in this mode, the sequence might not
-    trigger at all. You can recover from this by doing a stop/start and
+    trigger at all. If you wait a while before turning the depth knob up,
+    the noise floor detection will recover automatically. If the playback
+    still doesn't start (e.g. the sequence keeps running during the whole
+    procedure), you can recover from this by doing a stop/start and
     then retry the arming.

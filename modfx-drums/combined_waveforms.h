@@ -1,6 +1,12 @@
 #pragma once
 #include <stdint.h>
-const uint16_t *get_waveform(int id, uint16_t * length);
+
+struct waveform {
+    const uint16_t *data;
+    uint16_t length;
+};
+
+struct waveform get_waveform(int id);
 
 #define NUM_WAVEFORMS 12
 

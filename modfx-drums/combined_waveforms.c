@@ -200,23 +200,29 @@ static const uint16_t _data_rim[308] = {
         0, 32768, 32768, 32768, 32768,     0,     0,   585,
 };
 
-const uint16_t *get_waveform(int id, uint16_t *length)
+struct waveform get_waveform(int id)
 {
+    struct waveform wf;
     switch (id)
     {
         case WAVEFORM_ID_bd:
-            *length = _length_bd;
-            return _data_bd;
+            wf.length = _length_bd * 5;
+            wf.data = _data_bd;
+            break;
         case WAVEFORM_ID_sd:
-            *length = _length_sd;
-            return _data_sd;
+            wf.length = _length_sd * 5;
+            wf.data = _data_sd;
+            break;
         case WAVEFORM_ID_hhc:
-            *length = _length_hhc;
-            return _data_hhc;
+            wf.length = _length_hhc * 5;
+            wf.data = _data_hhc;
+            break;
         case WAVEFORM_ID_rim:
-            *length = _length_rim;
-            return _data_rim;
+            wf.length = _length_rim * 5;
+            wf.data = _data_rim;
+            break;
         default:
-            return 0;
+            break;
     }
+    return wf;
 }
