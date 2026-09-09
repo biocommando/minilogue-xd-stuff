@@ -1349,40 +1349,40 @@ const uint16_t *get_waveform(int id, uint16_t *length)
     switch (id)
     {
         case WAVEFORM_ID_bd:
-            *length = _length_bd;
+            *length = _length_bd * 5;
             return _data_bd;
         case WAVEFORM_ID_bd1:
-            *length = _length_bd1;
+            *length = _length_bd1 * 5;
             return _data_bd1;
         case WAVEFORM_ID_sd:
-            *length = _length_sd;
+            *length = _length_sd * 5;
             return _data_sd;
         case WAVEFORM_ID_sd1:
-            *length = _length_sd1;
+            *length = _length_sd1 * 5;
             return _data_sd1;
         case WAVEFORM_ID_hcp:
-            *length = _length_hcp;
+            *length = _length_hcp * 5;
             return _data_hcp;
         case WAVEFORM_ID_hhc:
-            *length = _length_hhc;
+            *length = _length_hhc * 5;
             return _data_hhc;
         case WAVEFORM_ID_tam:
-            *length = _length_tam;
+            *length = _length_tam * 5;
             return _data_tam;
         case WAVEFORM_ID_hho:
-            *length = _length_hho;
+            *length = _length_hho * 5;
             return _data_hho;
         case WAVEFORM_ID_cow:
-            *length = _length_cow;
+            *length = _length_cow * 5;
             return _data_cow;
         case WAVEFORM_ID_crs:
-            *length = _length_crs;
+            *length = _length_crs * 5;
             return _data_crs;
         case WAVEFORM_ID_rim:
-            *length = _length_rim;
+            *length = _length_rim * 5;
             return _data_rim;
         case WAVEFORM_ID_ht:
-            *length = _length_ht;
+            *length = _length_ht * 5;
             return _data_ht;
         default:
             return 0;

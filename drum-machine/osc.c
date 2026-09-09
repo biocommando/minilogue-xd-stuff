@@ -30,7 +30,7 @@ struct compressed_osc
 static struct compressed_osc osc;
 
 // Overdrive
-static float gain = 1;
+static float gain;
 
 static const float invert_threshold = 17;
 static const float clip_threshold = 0.95;
@@ -47,16 +47,18 @@ static float syn_drum_mix = 0;
 
 ///////////
 
-static inline float compressed_osc_get(const struct compressed_osc *osc)
+__fast_inline int8_t compressed_osc_get(const struct compressed_osc *osc)
 {
-    int i = osc->phase;
-    int ai = i / 5;
-    int wi = i % 5;
-    if (ai >= osc->data_len || ai < 0)
+    const uint32_t i = osc->phase;
+    if (i >= osc->data_len)
         return 0;
-    uint16_t word = osc->data[ai];
-    float s = ((int) ((word >> (wi * 3)) & 0x7)) / 7.0f;
-    return (word & 0x8000) ? -s : s;
+    const uint16_t ai = i / 5;
+    const uint8_t wi = i % 5;
+    const uint16_t word = osc->data[ai];
+    const int8_t val = (word >> (wi * 3)) & 0x7;
+    if (word & 0x8000)
+        return -val;
+    return val;
 }
 
 void OSC_INIT(uint32_t platform, uint32_t api)
@@ -75,7 +77,9 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
     else if (mod_syn_drum_mix < 0)
         mod_syn_drum_mix = 0;
 
-    const float g1 = mod_syn_drum_mix < 0.5 ? 1 : 2 - 2 * mod_syn_drum_mix;
+    // Compensate compression here to keep the decompression
+    // as purely integer maths
+    const float g1 = mod_syn_drum_mix < 0.5 ? 1/7.0f : 2/7.0f - 2/7.0f * mod_syn_drum_mix;
     const float g2 = mod_syn_drum_mix < 0.5 ? 2 * mod_syn_drum_mix : 1;
 
     OSC_LOOP(y, yn, frames)

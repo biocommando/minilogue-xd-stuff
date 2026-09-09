@@ -108,6 +108,8 @@ def_compress
                     b = 127;
                 _word |= ((b >> 4) & 0x7) << (wi * 3);
             }
+            if (_word == 0x8000)
+                _word = 0;
             if (_word == 0)
                 zero++;
             else
@@ -189,7 +191,7 @@ def_decompress_to_c
     fread(&sr, sizeof(sr), 1, f_in);
 
     int num_words = total_length / 5;
-    fprintf(f_out, "static const unsigned _length = %d;\n", num_words);
+    fprintf(f_out, "static const unsigned _length = %d * 5;\n", num_words);
     fprintf(f_out, "static const unsigned short _data[%d] = {\n   ", num_words);
 
     for (int i = 0; i < num_words; i++)
