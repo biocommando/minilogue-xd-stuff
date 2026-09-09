@@ -90,7 +90,7 @@ ASMSRC := $(UASMSRC)
 
 ASMXSRC := $(UASMXSRC)
 
-CSRC := $(TEMPLATEDIR)/tpl/_unit.c $(UCSRC)
+CSRC := ../common/src/modfx_unit_c.c $(UCSRC)
 
 CXXSRC := $(UCXXSRC)
 
