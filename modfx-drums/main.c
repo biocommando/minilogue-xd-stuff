@@ -1,23 +1,26 @@
 #include "usermodfx.h"
 #include "combined_waveforms.h"
+#include <math.h>
 
-static float gain, vol, env, osc_inc = 0;
+static float gain, vol, env, osc_inc;
 static const uint8_t *pattern;
 #define SHORT_BLIP_LENGTH 3000 // 62.5 ms
 #define BLIP_POLARITY_MASK_HI 0x20 // 750 Hz
 #define BLIP_POLARITY_MASK_LO 0x40 // 325 Hz
 #define BLIP_MUTE_MASK 0x1000 // 85.33 ms
 #define BLIP_AMPLITUDE 0.2f
-static uint16_t blip_counter = 0;
+static uint16_t blip_counter;
 static uint8_t blip_polarity_mask;
 
-#define WAIT_THD_CROSS_IDLE 0
-#define WAIT_THD_CROSS_ARMED 1
-#define WAIT_THD_CROSS_ACTIVE 2
-
-static uint8_t halt_counter = 0, wait_thd_cross = WAIT_THD_CROSS_IDLE;
-static uint16_t halt_timeout_counter = 0;
-static float seq_trig_thd = 0;
+enum WaitThdCrossState {
+    WAIT_THD_CROSS_IDLE,
+    WAIT_THD_CROSS_ARMED,
+    WAIT_THD_CROSS_ACTIVE
+};
+static enum WaitThdCrossState wait_thd_cross;
+static uint8_t halt_counter, halt_status;
+static uint16_t halt_timeout_counter;
+static float seq_trig_thd;
 
 #ifdef MODFX_DRUMS_DEBUG
     void set_pattern(const uint8_t *p)
@@ -84,17 +87,17 @@ __fast_inline int8_t compressed_osc_get(struct compressed_osc *osc)
 
 static __sdram int8_t looper[128 * 1024 - sizeof(osc)];
 static uint32_t looper_idx;
-#define LOOPER_IDLE 0
-#define LOOPER_PLAY 1
-#define LOOPER_REC 2
-static uint8_t looper_mode;
+enum LooperMode {
+    LOOPER_IDLE, LOOPER_PLAY, LOOPER_REC
+};
+static enum LooperMode looper_mode;
 // Samplerate conversion is calculated from ratio: looper_sr_ratio / 4800
 static uint16_t looper_sr_ratio;
 
-static uint32_t seq_sample = 0, next_seq_trig = 0, seq_pos = 0,
-    tempo = 0, step_len = 0;
+static uint16_t seq_sample, tempo, step_len;
+static uint8_t seq_pos;
 
-static void set_step_length(uint32_t _tempo)
+static inline void set_step_length(uint32_t _tempo)
 {
   step_len = 48000 * 600 / _tempo / pattern[STEP_DIV_IDX];
   // Adaptive samplerate between 87.9 ... 175.8 bpm;
@@ -105,6 +108,7 @@ static void set_step_length(uint32_t _tempo)
     looper_sr_ratio = 2400;
   else
     looper_sr_ratio = 27297 * _tempo / 10000;
+  tempo = _tempo;
 }
 
 __fast_inline float blip()
@@ -115,14 +119,6 @@ __fast_inline float blip()
              return blip_counter & blip_polarity_mask ? BLIP_AMPLITUDE : -BLIP_AMPLITUDE;
     }
     return 0;
-}
-
-static void restart_playback()
-{
-    seq_sample = 0;
-    looper_idx = 0;
-    seq_pos = 0;
-    next_seq_trig = 1;
 }
 
 void MODFX_INIT(uint32_t platform, uint32_t api)
@@ -161,8 +157,8 @@ void MODFX_PROCESS(const float * __restrict x, float * __restrict y,
     if (new_tempo != tempo)
     {
         set_step_length(new_tempo);
-        restart_playback();
-        tempo = new_tempo;
+        seq_sample = step_len - 1;
+        seq_pos = N_STEPS - 1;
     }
 
     for (uint32_t i = 0; i < frames; i++)
@@ -171,7 +167,7 @@ void MODFX_PROCESS(const float * __restrict x, float * __restrict y,
         float output = 0;
         if (wait_thd_cross != WAIT_THD_CROSS_IDLE)
         {
-            const float abs_input = input > 0 ? input : -input;
+            const float abs_input = fabsf(input);
             if (wait_thd_cross == WAIT_THD_CROSS_ACTIVE)
             {
                 if (abs_input > seq_trig_thd)
@@ -192,14 +188,15 @@ void MODFX_PROCESS(const float * __restrict x, float * __restrict y,
                     seq_trig_thd = abs_input;
             }
         }
-        seq_sample++;
-        if (seq_sample == next_seq_trig)
+        if (++seq_sample == step_len)
         {
-            if (seq_pos == 16)
+            seq_sample = 0;
+            if (++seq_pos == N_STEPS)
             {
-                restart_playback();
+                seq_pos = 0;
+                // reset looper rec/playback on first beat
+                looper_idx = 0;
             }
-            next_seq_trig = seq_sample + step_len;
             const uint8_t triggers = pattern[seq_pos];
             uint16_t phase_offset = 0;
             if (triggers & TRIG_MASK_PLAY_OFFSET)
@@ -221,7 +218,6 @@ void MODFX_PROCESS(const float * __restrict x, float * __restrict y,
             osc_inc = 44100.0f / 48000.0f;
             if (triggers & TRIG_MASK_ALT_PITCH)
                 osc_inc *= ALT_PITCH_RATIO;
-            seq_pos++;
         }
 
         for (int i = 0; i < 4; i++)
@@ -233,11 +229,12 @@ void MODFX_PROCESS(const float * __restrict x, float * __restrict y,
         output += blip();
         vol *= env;
         // No interpolation etc., we're already working really close
-        // to size limits.
+        // to size limits. Not using a float ratio to make the calculation
+        // use purely int maths.
         const uint32_t looper_idx_adaptive_sr = looper_idx * looper_sr_ratio / 4800;
         if (looper_idx_adaptive_sr < sizeof(looper))
         {
-            if (looper_mode == LOOPER_PLAY && gain >= 0.001f)
+            if (looper_mode == LOOPER_PLAY && !halt_status)
             {
                 output += looper[looper_idx_adaptive_sr] / 127.0f;
             }
@@ -257,23 +254,26 @@ loop_end:
         halt_counter = halt_timeout_counter = 0;
 }
 
+// This will delegate the sequence restart to the processing
+// hook as the tempo check will recognize a tempo change and reset the
+// sequence. Resetting sequence from parameter changes proved to be
+// unreliable; sometimes the looper began playing at wrong offset.
+#define DELEGATE_SEQUENCE_RESTART_TO_MODFX_PROCESS \
+    tempo = 0
+
 void MODFX_PARAM(uint8_t index, int32_t value)
 {
     const float v = q31_to_f32(value);
     if (index == k_user_modfx_param_time)
     {
-        const uint8_t pattern_idx = (int)(N_PATTERNS * 0.99 * v);
+        const uint8_t pattern_idx = (int)(N_PATTERNS * 0.999f * v);
         const uint8_t * new_p = patterns[pattern_idx];
-        if (tempo)
-          set_step_length(tempo);
         if (new_p != pattern)
         {
-            // This will delegate the sequence restart to the processing
-            // hook. Resetting sequence here proved to be unreliable;
-            // sometimes the looper began playing at wrong offset.
-            tempo = 0;
+            DELEGATE_SEQUENCE_RESTART_TO_MODFX_PROCESS;
             blip_counter = SHORT_BLIP_LENGTH;
-            blip_polarity_mask = new_p[STEP_DIV_IDX] == 4 ? BLIP_POLARITY_MASK_HI : BLIP_POLARITY_MASK_LO;
+            blip_polarity_mask = new_p[STEP_DIV_IDX] == 4 ?
+                BLIP_POLARITY_MASK_HI : BLIP_POLARITY_MASK_LO;
         }
         pattern = new_p;
         if (pattern_idx == N_PATTERNS - 1)
@@ -287,9 +287,10 @@ void MODFX_PARAM(uint8_t index, int32_t value)
     }
     else if (index == k_user_modfx_param_depth)
     {
-        if (gain < 0.001f && v >= 0.001f)
+        const uint8_t new_halt_status = v < 0.001f;
+        if (halt_status && !new_halt_status) // Depth: 0 -> x
         {
-            restart_playback();
+            DELEGATE_SEQUENCE_RESTART_TO_MODFX_PROCESS;
             if (wait_thd_cross == WAIT_THD_CROSS_ARMED)
             {
                 wait_thd_cross = WAIT_THD_CROSS_ACTIVE;
@@ -297,7 +298,7 @@ void MODFX_PARAM(uint8_t index, int32_t value)
                 seq_trig_thd *= 2;
             }
         }
-        else if (gain >= 0.001f && v < 0.001f)
+        else if (!halt_status && new_halt_status) // Depth x -> 0
         {
             if (halt_timeout_counter == 0 || wait_thd_cross != WAIT_THD_CROSS_IDLE)
             {
@@ -316,6 +317,7 @@ void MODFX_PARAM(uint8_t index, int32_t value)
                 blip_polarity_mask = BLIP_POLARITY_MASK_HI;
             }
         }
+        halt_status = new_halt_status;
         gain = v;
     }
 }
