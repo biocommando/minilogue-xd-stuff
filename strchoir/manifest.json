@@ -1,0 +1,50 @@
+{
+    "header": {
+        "platform": "minilogue-xd",
+        "module": "osc",
+        "api": "1.1-0",
+        "dev_id": 0,
+        "prg_id": 0,
+        "version": "1.3-0",
+        "name": "StrChoir",
+        "num_param": 6,
+        "params": [
+            [
+                "Detune",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Piano octave",
+                0,
+                3,
+                ""
+            ],
+            [
+                "Duck piano",
+                0,
+                1,
+                ""
+            ],
+            [
+                "Piano waveform",
+                0,
+                1,
+                ""
+            ],
+            [
+                "Tape effect",
+                0,
+                100,
+                "%"
+            ],
+            [
+                "Granule size",
+                0,
+                100,
+                "%"
+            ]
+        ]
+    }
+}
