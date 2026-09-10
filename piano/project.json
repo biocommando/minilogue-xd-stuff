@@ -1,3 +1,4 @@
 {
-    "variants":["piano", "guitar", "choir"]
+    "variants":["piano", "guitar", "choir"],
+    "experimental": true
 }
