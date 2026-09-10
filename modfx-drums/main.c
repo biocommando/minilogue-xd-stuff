@@ -130,9 +130,9 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
         osc[i].wf = get_waveform(i);
         // Compensate compression here to keep the decompression
         // as purely integer maths
-        osc[i].mix = 2.0f / 7.0f;
+        osc[i].mix = 1.0f / 7.0f;
     }
-    osc[WAVEFORM_ID_hhc].mix = 0.67f / 7.0f;
+    osc[WAVEFORM_ID_hhc].mix = 0.333f / 7.0f;
 }
 
 #define TRIG_MASK_BD 1
