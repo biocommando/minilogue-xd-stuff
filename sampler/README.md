@@ -6,9 +6,11 @@ and also a program for transforming wav files into JSON format that can be
 sent using the uploader.
 
 ## Protocol
-- Bits 0...3: Data
-- Bits 4...6: Meta
+- Bits 0...3: DATA
+- Bits 4...6: META
+
 META:
+
 - 0..3 -> sequence number
 - 4 -> start data segment. DATA contains id:
   * 1: samplerate
@@ -19,6 +21,7 @@ META:
 - others: state machine reset
 
 Data segments:
+
 DATA contains the words in big-endian format (so first message contains
 most significant 4 bits), split into 4-bit chunks.
 
