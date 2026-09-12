@@ -64,7 +64,7 @@ static void handle_midi_cc(uint8_t midi_word)
     /*
      * Format:
      * [0...3] DATA
-     * [4...7] META
+     * [4...6] META
      * 
      * META:
      * 0..3 -> sequence number
