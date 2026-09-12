@@ -4,24 +4,26 @@
 
 #define DATA_LEN 30000
 
+FILE *out;
 int seq_num = 0;
 void print_word(uint32_t word, int n_bytes)
 {
+    int shift = (n_bytes * 2 - 1) * 4;
     while (n_bytes--)
     {
         for (int i = 0; i < 2; i++)
         {
-            printf(",%u", (seq_num << 4) | (word & 0xF));
-            word >>= 4;
+            fprintf(out, ",%u", (seq_num << 4) | ((word >> shift) & 0xF));
             seq_num = (seq_num + 1) % 4;
+            shift -= 4;
         }
     }
-    puts("");
+    fputs("", out);
 }
 
 void print_seg_start(unsigned segment)
 {
-    printf(",%u", 0x40 | segment);
+    fprintf(out, ",%u", 0x40 | segment);
     seq_num = 0;
 }
 
@@ -29,7 +31,7 @@ void print_reset()
 {
     static int first = 1;
     // Prints sequence META=7,6 to be extra sure that reset goes through
-    puts(first ? "112,96" : ",112,96");
+    fputs(first ? "112,96" : ",112,96", out);
     first = 0;
 }
 
@@ -45,7 +47,14 @@ int main(int argc, char **argv)
     float freq = 440;
     sscanf(argv[2], "%f", &freq);
     
-    puts("[");
+    out = fopen("out.json", "w");
+    if (!out)
+    {
+        puts("Cannot open out.json");
+        free_wav_file(&wav);
+        return 1;
+    }
+    fputs("[", out);
     print_reset();
     print_seg_start(1);
     print_word(wav.sample_rate, 2);
@@ -65,12 +74,15 @@ int main(int argc, char **argv)
     {
         float v[2];
         wav_get_normalized(&wav, i, v);
-        int8_t word = v[0] * 127;
-        print_word((uint8_t)word, 1);
+        int word = v[0] * 127;
+        if (word < 0)
+            word = 127 - word;
+        print_word(word, 1);
     }
     free_wav_file(&wav);
     print_reset();
     
-    puts("]");
+    fputs("]", out);
+    fclose(out);
     return 0;
 }

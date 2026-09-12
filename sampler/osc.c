@@ -118,7 +118,10 @@ static void handle_midi_cc(uint8_t midi_word)
         }
         if (segment == 4 && META % 2 == 1 && osc.wfd.length < DATA_LEN)
         {
-            waveform[osc.wfd.length] = (int8_t)data_word;
+            int d = data_word;
+            if (d > 127)
+                d = 127 - d;
+            waveform[osc.wfd.length] = d;
             osc.wfd.length++;
             data_word = 0;
         }
