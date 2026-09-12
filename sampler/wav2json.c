@@ -70,14 +70,29 @@ int main(int argc, char **argv)
     print_reset();
     
     print_seg_start(4);
-    for (int i = 0; i < wav.num_frames && i < DATA_LEN; i++)
+    float maxval = 0;
+    for (int pass = 0; pass < 2; pass++)
     {
-        float v[2];
-        wav_get_normalized(&wav, i, v);
-        int word = v[0] * 127;
-        if (word < 0)
-            word = 127 - word;
-        print_word(word, 1);
+        for (int i = 0; i < wav.num_frames && i < DATA_LEN; i++)
+        {
+            float v[2];
+            wav_get_normalized(&wav, i, v);
+            if (pass == 0)
+            {
+                if (maxval < v[0])
+                    maxval = v[0];
+                if (maxval < -v[0])
+                    maxval = -v[0];
+            }
+            else
+            {
+                v[0] /= maxval;
+                int word = v[0] * 127;
+                if (word < 0)
+                    word = 127 - word;
+                print_word(word, 1);
+            }
+        }
     }
     free_wav_file(&wav);
     print_reset();
