@@ -4,7 +4,7 @@
 
 PROJECT = sampler
 
-UCSRC = osc.c
+UCSRC = osc.c ../common/src/simple_oscillator.c
 
 UCXXSRC = 
 

@@ -151,7 +151,7 @@ all: PRE_ALL $(OBJS) $(OUTFILES) POST_ALL
 	@echo
 
 wavefile_convert:
-	gcc ../common/wav_handler/wav_handler.c wav2json.c -O2 -Wno-unused-result -o wav2json
+	gcc ../common/wav_handler/wav_handler.c wav2json.c -O2 -Wno-unused-result -lm -o wav2json
 
 PRE_ALL:
 
