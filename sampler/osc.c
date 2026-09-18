@@ -117,12 +117,13 @@ static inline float data_osc_process(struct data_osc *osc)
     osc->phase += osc->inc;
     if (user_params.loop_mode != LOOP_MODE_NO_LOOP)
     {
+        const float frac = osc->phase - (int)osc->phase;
         if (osc->phase >= curr.length)
-            osc->phase = user_params.loop_mode == LOOP_MODE_LOOP_IDX ?
-                osc->loopback_idx : 0;
+            osc->phase = (user_params.loop_mode == LOOP_MODE_LOOP_IDX ?
+                osc->loopback_idx : 0) + frac;
         else if (osc->phase < 0)
-            osc->phase = user_params.loop_mode == LOOP_MODE_LOOP_IDX ?
-                curr.length - 1 - osc->loopback_idx : curr.length - 1;
+            osc->phase = (user_params.loop_mode == LOOP_MODE_LOOP_IDX ?
+                curr.length - 1 - osc->loopback_idx : curr.length - 1) + frac;
     }
 
     return out * osc->mix * curr.scaling;
