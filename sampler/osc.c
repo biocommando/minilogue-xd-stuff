@@ -209,9 +209,10 @@ void OSC_INIT(uint32_t platform, uint32_t api)
 void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t frames)
 {
     const float shape_lfo = q31_to_f32(params->shape_lfo);
-    const float delay_read_offset = user_params.flanger_mix * 50 +
-        user_params.flanger_mix * SimpleOscillator_getValue(&flanger_osc, OSC_TRIANGLE) * 50 +
-        shape_lfo * 100;
+    const float delay_read_offset = user_params.flanger_mix * (
+        100 +
+        SimpleOscillator_getValue(&flanger_osc, OSC_TRIANGLE) * 49 +
+        shape_lfo * 50);
     update_inc(params);
     if (user_params.reverse)
         osc.inc *= -1;
