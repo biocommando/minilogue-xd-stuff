@@ -91,7 +91,7 @@ ASMSRC := $(UASMSRC)
 
 ASMXSRC := $(UASMXSRC)
 
-CSRC := $(TEMPLATEDIR)/tpl/_unit.c $(UCSRC)
+CSRC := ../common/src/osc_unit_c.c $(UCSRC)
 
 CXXSRC := $(UCXXSRC)
 

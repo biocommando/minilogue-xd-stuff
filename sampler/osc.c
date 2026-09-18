@@ -39,6 +39,7 @@ static uint8_t bits;
 static float delay_buf[200];
 static uint8_t delay_idx;
 static SimpleOscillator flanger_osc;
+static float last_sample;
 
 #define DATA_LEN 30000
 static uint8_t waveform[DATA_LEN];
@@ -71,32 +72,30 @@ static inline struct sample get_wave_data(const struct data_osc *osc, uint32_t i
     s.length = osc->wfd.length;
     if (bits == 8)
     {
+        s.scaling = 1 / (float)0x7f;
         if (idx >= s.length)
         {
-            s.data = 0;
-            s.scaling = 1;
+            s.data = last_sample;
             return s;
         }
         int d = osc->wfd.data[idx];
         if (d > 0x7f)
             d = 0x7f - d;
         s.data = d;
-        s.scaling = 1 / (float)0x7f;
     }
     else
     {
+        s.scaling = 1 / (float)0x7fff;
         s.length /= 2;
         if (idx >= s.length)
         {
-            s.data = 0;
-            s.scaling = 1;
+            s.data = last_sample;
             return s;
         }
         int d = (osc->wfd.data[idx * 2] << 8) | (osc->wfd.data[idx * 2 + 1]);
         if (d > 0x7fff)
             d = 0x7fff - d;
         s.data = d;
-        s.scaling = 1 / (float)0x7fff;
     }
     return s;
 }
@@ -241,6 +240,14 @@ void OSC_NOTEON(const user_osc_param_t *const params)
 {
     const float len = osc.wfd.length * 8 / bits;
     osc.phase = (((params->pitch) >> 8) & 3) * user_params.split * len;
+
+    if (osc.loopback_idx < len)
+    {
+        struct sample s = get_wave_data(&osc, osc.loopback_idx);
+        last_sample = s.data * s.scaling;
+    }
+    else
+        last_sample = 0;
     if (user_params.reverse)
         osc.phase = len - osc.phase;
     osc.mix = 1;
