@@ -6,13 +6,14 @@
 
 #define MIDDLE_C_FREQ_HZ 261.6256
 
-static struct {
-    float split, retrig_amp, flanger_mix;
-    uint8_t kb_track, linint, reverse;
-    uint16_t retrig;
-} user_params;
+#define LOOP_MODE_NO_LOOP 2
+#define LOOP_MODE_LOOP_START 1
+#define LOOP_MODE_LOOP_IDX 0
 
-static uint16_t retrig_counter;
+static struct {
+    float split, flanger_mix;
+    uint8_t kb_track, linint, reverse, loop_mode;
+} user_params;
 
 struct waveform_data
 {
@@ -114,8 +115,15 @@ static inline float data_osc_process(struct data_osc *osc)
     }
 
     osc->phase += osc->inc;
-    if (osc->phase >= curr.length || osc->phase < 0)
-        osc->phase = osc->loopback_idx;
+    if (user_params.loop_mode != LOOP_MODE_NO_LOOP)
+    {
+        if (osc->phase >= curr.length)
+            osc->phase = user_params.loop_mode == LOOP_MODE_LOOP_IDX ?
+                osc->loopback_idx : 0;
+        else if (osc->phase < 0)
+            osc->phase = user_params.loop_mode == LOOP_MODE_LOOP_IDX ?
+                curr.length - 1 - osc->loopback_idx : curr.length - 1;
+    }
 
     return out * osc->mix * curr.scaling;
 }
@@ -195,28 +203,17 @@ void OSC_INIT(uint32_t platform, uint32_t api)
     osc.wfd.data = waveform;
     osc.loopback_idx = DATA_LEN;
     set_sample_metadata_defaults();
-    flanger_osc.frequency = 4.0f / k_samplerate;
 }
 
 void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t frames)
 {
     const float shape_lfo = q31_to_f32(params->shape_lfo);
-    const float delay_read_offset = user_params.flanger_mix * 50 + user_params.flanger_mix * SimpleOscillator_getValue(&flanger_osc, OSC_TRIANGLE) * 50 + shape_lfo * 100;
+    const float delay_read_offset = user_params.flanger_mix * 50 +
+        user_params.flanger_mix * SimpleOscillator_getValue(&flanger_osc, OSC_TRIANGLE) * 50 +
+        shape_lfo * 100;
     update_inc(params);
     if (user_params.reverse)
         osc.inc *= -1;
-    if (retrig_counter >= frames)
-    {
-        retrig_counter -= frames;
-        if (retrig_counter < frames)
-        {
-            osc.phase = 0;
-            if (user_params.reverse)
-                osc.phase = osc.wfd.length * 8 / bits - osc.phase;
-            osc.mix *= user_params.retrig_amp;
-            retrig_counter = user_params.retrig;
-        }
-    }
     flanger_osc.phase += flanger_osc.frequency * frames;
     flanger_osc.phase -= (int)flanger_osc.phase;
 
@@ -251,7 +248,6 @@ void OSC_NOTEON(const user_osc_param_t *const params)
     if (user_params.reverse)
         osc.phase = len - osc.phase;
     osc.mix = 1;
-    retrig_counter = user_params.retrig;
 }
 
 void OSC_NOTEOFF(const user_osc_param_t *const params)
@@ -275,11 +271,11 @@ void OSC_PARAM(uint16_t index, uint16_t value)
         case USER_PARAM__Reverse__idx:
             user_params.reverse = value;
             break;
-        case USER_PARAM__Retrig__idx:
-            user_params.retrig = value * 480;
+        case USER_PARAM__Flanger_rate__idx:
+            flanger_osc.frequency = (0.2f + value / 10.0f) / k_samplerate;
             break;
-        case USER_PARAM__Retrig_amp__idx:
-            user_params.retrig_amp = value / 100.0f;
+        case USER_PARAM__Loop_mode__idx:
+            user_params.loop_mode = value;
             break;
         case k_user_osc_param_shape:
             user_params.flanger_mix = param_val_to_f32(value);

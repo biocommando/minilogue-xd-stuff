@@ -49,11 +49,11 @@ when the received data is complete.
 	  regions.
 - 2: Track kb
 	* Pitch follows keyboard if set to 1. If set to 2, plays at constant speed.
-- 3: Retrig
-	* Retrigger after a delay. 100% = 1 second
-- 4: Retrig amp
-	* Modify amplitude of the delayed retriggered signal. These parameters
-	allow adding a midi-delay type of effect.
+- 3: Flanger rate from 0.2 to 10.2 Hz.
+- 4: Loop mode
+	* 1 = loop to predefined loop index
+	* 2 = loop to start
+	* 3 = oneshot
 - 5: Interpolation.
 	* 1 = linear
 	* 2 = no interpolation

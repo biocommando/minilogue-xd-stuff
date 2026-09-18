@@ -22,16 +22,16 @@
                 ""
             ],
             [
-                "Retrig",
+                "Flanger rate",
                 0,
                 100,
                 "%"
             ],
             [
-                "Retrig amp",
-                -100,
-                100,
-                "%"
+                "Loop mode",
+                0,
+                2,
+                ""
             ],
             [
                 "Interpolation",
