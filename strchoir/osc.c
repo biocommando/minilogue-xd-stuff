@@ -256,7 +256,7 @@ void OSC_PARAM(uint16_t index, uint16_t value)
             break;
         case USER_PARAM__Piano_waveform__idx:
             piano_osc.wfd = value ?
-                get_clockenspiel_waveform() : get_piano_waveform();
+                get_epiano_waveform() : get_piano_waveform();
             piano_osc.loopback_idx = piano_osc.wfd.length;
             break;
         case USER_PARAM__Granule_size__idx:

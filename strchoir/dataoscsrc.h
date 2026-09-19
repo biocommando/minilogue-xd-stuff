@@ -10,4 +10,4 @@ struct waveform_data
 struct waveform_data get_choir_waveform();
 struct waveform_data get_string_waveform();
 struct waveform_data get_piano_waveform();
-struct waveform_data get_clockenspiel_waveform();
+struct waveform_data get_epiano_waveform();
