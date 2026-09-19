@@ -139,7 +139,7 @@ void OSC_INIT(uint32_t platform, uint32_t api)
         osc[i].last_sample = osc[i].wfd.data[osc[i].loopback_idx];
         const int i2 = N_OSC / 2 + i;
         osc[i2].wfd = get_string_waveform();
-        osc[i2].loopback_idx = 80;
+        osc[i2].loopback_idx = 82;
         osc[i2].last_sample = osc[i2].wfd.data[osc[i2].loopback_idx];
     }
     init_filter(&tape.lpf, k_samplerate / 2, k_samplerate);
