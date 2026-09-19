@@ -21,8 +21,10 @@ struct data_osc
     // Index increment
     float inc;
     // Position where to jump after reaching end
-    float loopback_idx;
+    uint16_t loopback_idx;
     float mix;
+    // for interpolation; either 0 or data at loopback_idx
+    int8_t last_sample;
 };
 
 static struct data_osc osc[N_OSC], piano_osc;
@@ -92,7 +94,10 @@ static inline float data_osc_process(struct data_osc *osc)
 
     osc->phase += osc->inc;
     if (osc->phase >= osc->wfd.length)
-        osc->phase = osc->loopback_idx;
+    {
+        const float frac = osc->phase - (int)osc->phase;
+        osc->phase = osc->loopback_idx + frac;
+    }
 
     return out * osc->mix / 127.0f;
 }
@@ -130,9 +135,12 @@ void OSC_INIT(uint32_t platform, uint32_t api)
     for (int i = 0; i < N_OSC / 2; i++)
     {
         osc[i].wfd = get_choir_waveform();
-        osc[i].loopback_idx = 5138;
-        osc[N_OSC / 2 + i].wfd = get_string_waveform();
-        osc[N_OSC / 2 + i].loopback_idx = 80;
+        osc[i].loopback_idx = 5124;
+        osc[i].last_sample = osc[i].wfd.data[osc[i].loopback_idx];
+        const int i2 = N_OSC / 2 + i;
+        osc[i2].wfd = get_string_waveform();
+        osc[i2].loopback_idx = 80;
+        osc[i2].last_sample = osc[i2].wfd.data[osc[i2].loopback_idx];
     }
     init_filter(&tape.lpf, k_samplerate / 2, k_samplerate);
 }
