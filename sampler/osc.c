@@ -43,7 +43,7 @@ static SimpleOscillator flanger_osc;
 static float last_sample;
 
 #define DATA_LEN 30000
-static uint8_t waveform[DATA_LEN];
+extern uint8_t waveform[DATA_LEN];
 
 static void set_sample_metadata_defaults()
 {
@@ -202,7 +202,8 @@ void OSC_INIT(uint32_t platform, uint32_t api)
     (void) platform;
     (void) api;
     osc.wfd.data = waveform;
-    osc.loopback_idx = DATA_LEN;
+    osc.loopback_idx = 82;
+    osc.wfd.length = 10489;
     set_sample_metadata_defaults();
 }
 
