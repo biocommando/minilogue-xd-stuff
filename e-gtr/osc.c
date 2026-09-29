@@ -149,7 +149,7 @@ void OSC_PARAM(uint16_t index, uint16_t value)
                 AdsrEnvelope_setAttack(&env_a, (int)attack_length);
                 AdsrEnvelope_setSustain(&env_a, 1);
                 AdsrEnvelope_setDecay(&env_d, (int)decay_length);
-                decay_length = 2 * 0.015 * k_samplerate;
+                decay_length = 2 * 0.03f * k_samplerate;
                 decay_length = decay_length * (0.5 + v * 0.5);
                 AdsrEnvelope_setDecay(&env_noise, (int)decay_length);
             }
