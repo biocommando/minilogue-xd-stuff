@@ -11,10 +11,10 @@
 #define USER_PARAM__Attack__max 100
 
 // Interval
-// Range: 0 to 1 
+// Range: 0 to 3 
 #define USER_PARAM__Interval__idx k_user_osc_param_id2
 #define USER_PARAM__Interval__min 0
-#define USER_PARAM__Interval__max 1
+#define USER_PARAM__Interval__max 3
 
 // Noise mix
 // Range: 0 to 100 %
@@ -27,4 +27,16 @@
 #define USER_PARAM__Decay__idx k_user_osc_param_id4
 #define USER_PARAM__Decay__min 0
 #define USER_PARAM__Decay__max 100
+
+// Strum delay
+// Range: 0 to 15 
+#define USER_PARAM__Strum_delay__idx k_user_osc_param_id5
+#define USER_PARAM__Strum_delay__min 0
+#define USER_PARAM__Strum_delay__max 15
+
+// Chirp volume
+// Range: 0 to 100 %
+#define USER_PARAM__Chirp_volume__idx k_user_osc_param_id6
+#define USER_PARAM__Chirp_volume__min 0
+#define USER_PARAM__Chirp_volume__max 100
 

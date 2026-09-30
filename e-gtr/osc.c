@@ -12,15 +12,16 @@ static struct filter_state tone_filter, noise_filter;
 static AdsrEnvelope env_a, env_d, env_noise;
 static float overall_env_val = 1, overall_env = 1;
 #define N_OSC 2
-static BasicOscillator osc[N_OSC];
+static BasicOscillator osc[N_OSC], chirp_osc;
 
-static float noise_mix, tone, dist_gain;
+static float noise_mix, tone, dist_gain, chirp_vol;
 static uint8_t osc1_interval;
+static uint16_t strum_delay, strum_delay_counter;
 
 static const float invert_threshold = 17;
 static const float clip_threshold = 0.95;
 
-static const float intervals[] = {1.5, 2};
+static const float intervals[] = {1.5, 2, 1.333, 1.003};
 
 #define guitar_waveform_length 134
 static const float guitar_waveform[guitar_waveform_length] = {0.04466445371508598, 0.13951027393341064, 0.24342605471611023, 0.3452039062976837,
@@ -65,11 +66,15 @@ void OSC_INIT(uint32_t platform, uint32_t api)
       BasicOscillator_setWavetable(&osc[i], (float*)guitar_waveform, guitar_waveform_length);
       BasicOscillator_setWaveTableParams(&osc[i], 0, 1);
     }
+    init_BasicOscillator(&chirp_osc, k_samplerate);
+    BasicOscillator_setFrequency(&chirp_osc, 450.0f / k_samplerate);
 }
 
 static inline void update_inc(const user_osc_param_t *const params)
 {
-    const float inc = osc_w0f_for_note((params->pitch) >> 8, params->pitch & 0xFF);
+    float inc = osc_w0f_for_note((params->pitch) >> 8, params->pitch & 0xFF);
+    BasicOscillator_calculateNext(&chirp_osc);
+    inc = inc * (1 - AdsrEnvelope_getEnvelope(&env_noise) * BasicOscillator_getValue(&chirp_osc, OSC_TRIANGLE) * chirp_vol);
     BasicOscillator_setFrequency(&osc[0], inc);
     BasicOscillator_setFrequency(&osc[1], inc * intervals[osc1_interval]);
 }
@@ -89,9 +94,25 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
         BasicOscillator_calculateNext(&osc[0]);
         BasicOscillator_calculateNext(&osc[1]);
 
-        float tri_out = BasicOscillator_getValue(&osc[0], OSC_TRIANGLE) + BasicOscillator_getValue(&osc[1], OSC_TRIANGLE);
+        float tri_out = BasicOscillator_getValue(&osc[0], OSC_TRIANGLE);
+        float wt_out = BasicOscillator_getValue(&osc[0], OSC_WT);
+        if (strum_delay_counter >= strum_delay)
+        {
+            tri_out += BasicOscillator_getValue(&osc[1], OSC_TRIANGLE);
+            wt_out += BasicOscillator_getValue(&osc[1], OSC_WT);
+        }
+        else
+        {
+            strum_delay_counter++;
+            if (strum_delay_counter == strum_delay)
+            {
+                AdsrEnvelope_trigger(&env_noise);
+                // don't retrigger env_noise if parameter is increased while
+                // note is playing
+                strum_delay_counter = 0xffff;
+            }
+        }
         tri_out *= AdsrEnvelope_getEnvelope(&env_a) * 0.5;
-        float wt_out = BasicOscillator_getValue(&osc[0], OSC_WT) + BasicOscillator_getValue(&osc[1], OSC_WT);
         wt_out *= AdsrEnvelope_getEnvelope(&env_d) * 0.5 + shape_lfo;
         float noise_out = synth_random_noise();
         noise_out = process_filter(&noise_filter, noise_out);
@@ -128,6 +149,7 @@ void OSC_NOTEON(const user_osc_param_t *const params)
     AdsrEnvelope_trigger(&env_a);
     AdsrEnvelope_trigger(&env_d);
     AdsrEnvelope_trigger(&env_noise);
+    strum_delay_counter = 0;
 }
 
 void OSC_NOTEOFF(const user_osc_param_t *const params)
@@ -165,6 +187,14 @@ void OSC_PARAM(uint16_t index, uint16_t value)
                 const float v = value / 100.0;
                 overall_env = 1 - 0.0002 * v * v;
             }
+            break;
+        case USER_PARAM__Strum_delay__idx:
+            {
+                strum_delay = value * 200;
+            }
+            break;
+        case USER_PARAM__Chirp_volume__idx:
+            chirp_vol = value / 100.0f;
             break;
         case k_user_osc_param_shape:
             {
