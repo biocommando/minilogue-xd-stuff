@@ -85,15 +85,28 @@ inline static float sqr1(float phase)
     return phase < 0.5 ? 1.0f : -1.0f;
 }
 
-inline static float wt1(float *wt, float phase, int pos, int window, float *dcFilterState)
+inline static float wt1(BasicOscillator *bo, float phase)
 {
-    const float value = wt[(int) (pos + window * phase)];
+    const float idx = bo->wtPos + bo->wtWindow * phase;
+    const float value0 = bo->wt[(int)idx];
+#ifdef BASIC_OSCILLATOR_INTERPOLATED_WT
+    int idx1 = idx + 1;
+    if (idx1 >= bo->wtPos + bo->wtWindow)
+        idx1 = bo->wtPos;
+    const float value1 = bo->wt[idx1];
+    const float value = value0 + (value1 - value0) * (idx - (int)idx);
+#else
+    const float value = value0;
+#endif
 
+#ifndef BASIC_OSCILLATOR_NO_DC_FLT
     // Remove DC offset
-    dcFilterState[0] = 0.9984 * (value + dcFilterState[0] - dcFilterState[1]);
-    dcFilterState[1] = value;
-
-    return dcFilterState[0];
+    bo->dcFilterState[0] = 0.9984 * (value + bo->dcFilterState[0] - bo->dcFilterState[1]);
+    bo->dcFilterState[1] = value;
+    return bo->dcFilterState[0];
+#else
+    return value;
+#endif
 }
 
 void BasicOscillator_calculateNext(BasicOscillator *bo)
@@ -128,7 +141,7 @@ inline static float get_value(float p, enum OscType oscType, BasicOscillator *bo
         case OSC_SQUARE:
             return sqr1(p);
         case OSC_WT:
-            return wt1(bo->wt, p, bo->wtPos, bo->wtWindow, bo->dcFilterState);
+            return wt1(bo, p);
         default:
             return 0;
     }
