@@ -1,2 +1,6 @@
 release-*
-**/dist
+**/build
+**/*.mnlgxdunit
+**/*.o
+**/*.c~
+**/*.h~
