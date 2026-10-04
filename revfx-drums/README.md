@@ -18,7 +18,6 @@ to the drum beat. The recorded audio is in 16-bit / 48 kHz format.
   change is indicated by playing back a short beep sound, and a lower beep
   sound is used for 2-bar patterns. Patterns:
   * 0 non-accented metronome -- 1 bar
-	* Selecting this pattern will stop looper playback.
   * 1 rock 1 -- 2 bars
   * 2 rock 2 -- 2 bars
   * 3 slow beat -- 2 bars

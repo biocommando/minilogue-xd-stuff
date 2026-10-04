@@ -297,8 +297,6 @@ void REVFX_PARAM(uint8_t index, int32_t value)
             looper_mode = LOOPER_REC;
         else if (looper_mode == LOOPER_REC)
             looper_mode = LOOPER_PLAY;
-        if (pattern_idx == 0)
-            looper_mode = LOOPER_IDLE;
         seq_trig_thd = 0;
         wait_thd_cross = WAIT_THD_CROSS_IDLE;
     }
