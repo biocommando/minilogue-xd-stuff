@@ -47,7 +47,7 @@ typedef struct
      * Points to the beginning of the sine wave wavetable so using OSC_WT waveform without calling
      * BasicOscillator_setWavetable just doesn't make any sound but doesn't crash the program either.
      */
-    float *wt;
+    const float *wt;
     /*
      * Size of the wavetable data.
      */
@@ -70,7 +70,7 @@ void BasicOscillator_calculateNext(BasicOscillator * bo);
 /*
  * Set wavetable data. BasicOscillator_setWaveTableParams must be called after calling this.
  */
-void BasicOscillator_setWavetable(BasicOscillator * bo, float *wt, int size);
+void BasicOscillator_setWavetable(BasicOscillator * bo, const float *wt, int size);
 /*
  * Get current oscillator signal value for the given oscillator type.
  */

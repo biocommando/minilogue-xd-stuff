@@ -44,7 +44,7 @@ void BasicOscillator_setWaveTableParams(BasicOscillator *bo, float pos, float wi
         bo->wtPos = 0;
 }
 
-void BasicOscillator_setWavetable(BasicOscillator *this, float *wt, int size)
+void BasicOscillator_setWavetable(BasicOscillator *this, const float *wt, int size)
 {
     this->wt = wt;
     this->wt_size = size;
