@@ -63,7 +63,7 @@ void OSC_INIT(uint32_t platform, uint32_t api)
     for (int i = 0; i < N_OSC; i++)
     {
       init_BasicOscillator(&osc[i], k_samplerate);
-      BasicOscillator_setWavetable(&osc[i], (float*)guitar_waveform, guitar_waveform_length);
+      BasicOscillator_setWavetable(&osc[i], guitar_waveform, guitar_waveform_length);
       BasicOscillator_setWaveTableParams(&osc[i], 0, 1);
     }
     init_BasicOscillator(&chirp_osc, k_samplerate);
@@ -177,7 +177,8 @@ void OSC_PARAM(uint16_t index, uint16_t value)
             }
             break;
         case USER_PARAM__Interval__idx:
-            osc1_interval = value;
+            if (value <= USER_PARAM__Interval__max)
+                osc1_interval = value;
             break;
         case USER_PARAM__Noise_mix__idx:
             noise_mix = value / 100.0 * 0.5;
