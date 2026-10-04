@@ -37,7 +37,7 @@ to the drum beat. The recorded audio is in 16-bit / 48 kHz format.
     then retry the arming.
     If you twist the TIME knob while in paused in input trigger monitoring mode,
     it will switch the used drum kit.
-- SHIFT+DEPTH parameter selects the pattern and controls the looper. Pattern
+- SHIFT + DEPTH parameter selects the pattern and controls the looper. Pattern
   change is indicated by playing back a short beep sound, and a lower beep
   sound is used for 2-bar patterns. Patterns:
   * 0 non-accented metronome -- 1 bar
