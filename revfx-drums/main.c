@@ -38,7 +38,7 @@ static float seq_trig_thd;
 #define N_PATTERNS 17
 
 static uint8_t patterns[N_PATTERNS][N_STEPS + 1] = {
-    {8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0, 4}, // non-accented metronome
+    {8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 2}, // non-accented metronome
     {21, 4, 22, 4, 21, 5, 22, 20, 21, 4, 22, 4, 21, 38, 54, 22, 2}, // rock 1
     {5, 52, 6, 52, 5, 1, 6, 52, 5, 20, 6, 20, 36, 1, 38, 70, 2}, // rock 2
     {5, 4, 20, 4, 6, 4, 20, 9, 68, 69, 118, 68, 4, 9, 54, 36, 2}, // slow beat
@@ -276,7 +276,7 @@ void REVFX_PROCESS(float *x, uint32_t frames)
 void REVFX_PARAM(uint8_t index, int32_t value)
 {
     const float v = q31_to_f32(value);
-    if (index == k_user_revfx_param_time)
+    if (index == k_user_revfx_param_shift_depth)
     {
         const uint8_t pattern_idx = (int)(N_PATTERNS * 0.999f * v);
         const uint8_t * new_p = patterns[pattern_idx];
@@ -293,10 +293,6 @@ void REVFX_PARAM(uint8_t index, int32_t value)
             set_drum_waveforms();
         }
         pattern = new_p;
-        if (pattern_idx == N_PATTERNS - 1)
-            looper_mode = LOOPER_REC;
-        else if (looper_mode == LOOPER_REC)
-            looper_mode = LOOPER_PLAY;
         seq_trig_thd = 0;
         wait_thd_cross = WAIT_THD_CROSS_IDLE;
     }
@@ -335,8 +331,12 @@ void REVFX_PARAM(uint8_t index, int32_t value)
         halt_status = new_halt_status;
         gain = v;
     }
-    else if (index == k_user_revfx_param_shift_depth)
+    else if (index == k_user_revfx_param_time)
     {
         looper_vol = 2 * v;
+        if (v < 0.001f)
+            looper_mode = LOOPER_REC;
+        else if (looper_mode == LOOPER_REC)
+            looper_mode = LOOPER_PLAY;
     }
 }
