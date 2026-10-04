@@ -77,7 +77,7 @@ static inline float data_osc_process(struct data_osc *osc, float inc)
 
     osc->phase += inc;
 
-    return out * osc->mix / 127.0f;
+    return out * osc->mix;
 }
 
 static struct data_osc osc[4];
@@ -92,11 +92,15 @@ enum LooperMode {
 static enum LooperMode looper_mode;
 static float looper_vol;
 
-static uint16_t seq_sample, tempo, step_len;
+static uint16_t seq_sample, step_len;
+static volatile uint16_t tempo;
 static uint8_t seq_pos;
+static uint16_t step_len_error, step_len_error_acc;
 
 static inline void set_step_length(uint32_t _tempo)
 {
+  step_len_error = (48000 * 600 / pattern[STEP_DIV_IDX]) % _tempo;
+  step_len_error_acc = 0;
   step_len = 48000 * 600 / _tempo / pattern[STEP_DIV_IDX];
   tempo = _tempo;
 }
@@ -138,12 +142,8 @@ void REVFX_INIT(uint32_t platform, uint32_t api)
     {
         osc[i].mix = 1;
     }
-    /*osc[WAVEFORM_ID_bd].wfd = get_kick_waveform();
-    osc[WAVEFORM_ID_sd].wfd = get_snare_waveform();
-    osc[WAVEFORM_ID_hhc].wfd = get_hat_waveform();*/
     set_drum_waveforms();
     osc[WAVEFORM_ID_hhc].mix = 0.333f;
-    //osc[WAVEFORM_ID_rim].wfd = get_rim_waveform();
 }
 
 #define TRIG_MASK_BD 1
@@ -195,9 +195,14 @@ void REVFX_PROCESS(float *x, uint32_t frames)
                     seq_trig_thd = abs_input;
             }
         }
-        if (++seq_sample == step_len)
+        if (++seq_sample >= step_len)
         {
             seq_sample = 0;
+
+            const uint32_t corr = step_len_error + step_len_error_acc;
+            step_len_error_acc = corr % new_tempo;
+            if (corr >= new_tempo)
+                seq_sample--; // will overflow... but the trigger condition should still work correctly
             if (++seq_pos == N_STEPS)
             {
                 seq_pos = 0;
@@ -231,6 +236,7 @@ void REVFX_PROCESS(float *x, uint32_t frames)
         {
             output0 += data_osc_process(&osc[i], osc_inc);
         }
+        output0 *= 1 / 127.0f;
         output0 *= vol;
         output0 += blip();
         vol *= env;
