@@ -150,7 +150,9 @@ function uurelease {
     echo "### Logue SDK" >> $dest/README.md
     cat $PROJ_BASE_PATH/../../../LICENSE >> $dest/README.md
     echo "Created release-$version directory succesfully, creating zip package"
-    zip -jr "$dest.zip" "$dest"
+    cd $PROJ_BASE_PATH
+    zip -r "release-$version.zip" "release-$version"
+    cd -
 }
 
 function uuhelp {
