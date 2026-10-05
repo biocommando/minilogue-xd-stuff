@@ -35,7 +35,7 @@ static float seq_trig_thd;
 #define N_STEPS 16
 #define STEP_DIV_IDX N_STEPS
 
-#define N_PATTERNS 17
+#define N_PATTERNS 16
 
 static uint8_t patterns[N_PATTERNS][N_STEPS + 1] = {
     {8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 2}, // non-accented metronome
@@ -53,7 +53,6 @@ static uint8_t patterns[N_PATTERNS][N_STEPS + 1] = {
     {21, 36, 44, 36, 22, 36, 13, 36, 20, 36, 13, 36, 22, 36, 44, 38, 4}, // rocky hihats
     {21, 0, 5, 0, 22, 0, 4, 34, 4, 130, 5, 1, 22, 0, 4, 170, 4}, // amen
     {101, 4, 101, 4, 22, 4, 4, 38, 4, 134, 101, 38, 22, 101, 4, 134, 4}, // funky
-    {51, 0, 164, 0, 162, 0, 164, 0, 162, 0, 164, 0, 162, 0, 164, 0, 4}, // metronome 2
     {30, 0, 8, 0, 8, 0, 8, 0, 28, 0, 8, 0, 8, 0, 8, 0, 2}, // metronome
 };
 
@@ -91,6 +90,7 @@ enum LooperMode {
 };
 static enum LooperMode looper_mode;
 static float looper_vol;
+static uint8_t looper_mix_mode;
 
 static uint16_t seq_sample, step_len;
 static volatile uint16_t tempo;
@@ -117,7 +117,14 @@ __fast_inline float blip()
 
 static void set_drum_waveforms()
 {
-    if (alt_drums)
+    if (alt_drums == 2)
+    {
+        osc[WAVEFORM_ID_bd].wfd = get_min_kick_waveform();
+        osc[WAVEFORM_ID_sd].wfd = get_min_snare_waveform();
+        osc[WAVEFORM_ID_hhc].wfd = get_min_hat_waveform();
+        osc[WAVEFORM_ID_rim].wfd = get_min_rim_waveform();
+    }
+    else if (alt_drums == 1)
     {    
         osc[WAVEFORM_ID_bd].wfd = get_alt_kick_waveform();
         osc[WAVEFORM_ID_sd].wfd = get_alt_snare_waveform();
@@ -156,7 +163,6 @@ void REVFX_INIT(uint32_t platform, uint32_t api)
 #define TRIG_MASK_PLAY_OFFSET 128
 #define SHORT_DECAY_INIT_VAL 0.9997f
 #define ALT_PITCH_RATIO 0.7f
-#define PLAY_OFFSET_SAMPLES 1000
 
 void REVFX_PROCESS(float *x, uint32_t frames)
 {
@@ -210,17 +216,17 @@ void REVFX_PROCESS(float *x, uint32_t frames)
                 looper_idx = 0;
             }
             const uint8_t triggers = pattern[seq_pos];
-            uint16_t phase_offset = 0;
+            uint8_t phase_offset = 16;
             if (triggers & TRIG_MASK_PLAY_OFFSET)
-                phase_offset = PLAY_OFFSET_SAMPLES;
+                phase_offset = 2;
             if (triggers & TRIG_MASK_BD)
-                osc[WAVEFORM_ID_bd].phase = phase_offset;
+                osc[WAVEFORM_ID_bd].phase = osc[WAVEFORM_ID_bd].wfd.length >> phase_offset;
             if (triggers & TRIG_MASK_SD)
-                osc[WAVEFORM_ID_sd].phase = phase_offset;
+                osc[WAVEFORM_ID_sd].phase = osc[WAVEFORM_ID_sd].wfd.length >> phase_offset;
             if (triggers & TRIG_MASK_HH)
-                osc[WAVEFORM_ID_hhc].phase = phase_offset;
+                osc[WAVEFORM_ID_hhc].phase = osc[WAVEFORM_ID_hhc].wfd.length >> phase_offset;
             if (triggers & TRIG_MASK_RIM)
-                osc[WAVEFORM_ID_rim].phase = phase_offset;
+                osc[WAVEFORM_ID_rim].phase = osc[WAVEFORM_ID_rim].wfd.length >> phase_offset;
             vol = gain * 0.5;
             if (triggers & TRIG_MASK_ACCENT)
                 vol *= 2;
@@ -228,6 +234,8 @@ void REVFX_PROCESS(float *x, uint32_t frames)
             if (triggers & TRIG_MASK_SHORT_DECAY)
                 env = SHORT_DECAY_INIT_VAL;
             osc_inc = DATA_SAMPLERATE / 48000.0f;
+            if (alt_drums == 2)
+                osc_inc *= 0.5f;
             if (triggers & TRIG_MASK_ALT_PITCH)
                 osc_inc *= ALT_PITCH_RATIO;
         }
@@ -243,17 +251,19 @@ void REVFX_PROCESS(float *x, uint32_t frames)
         float output1 = output0;
         if (looper_idx < LOOPER_LEN)
         {
+            const int16_t l0 = looper[looper_idx * 2];
+            const int16_t l1 = looper[looper_idx * 2 + 1];
             if (looper_mode == LOOPER_PLAY && !halt_status)
             {
                 const float f = looper_vol / 16384.0f;
-                output0 += looper[looper_idx * 2] * f;
-                output1 += looper[looper_idx * 2 + 1] * f;
+                output0 += l0 * f;
+                output1 += l1 * f;
             }
             else if (looper_mode == LOOPER_REC)
             {
                 // Leave one bit for headroom
-                looper[looper_idx * 2] = 16384 * input0;
-                looper[looper_idx * 2 + 1] = 16384 * input1;
+                looper[looper_idx * 2] = (looper_mix_mode ? l0 : 0) + 16384 * input0;
+                looper[looper_idx * 2 + 1] = (looper_mix_mode ? l1 : 0) + 16384 * input1;
             }
             looper_idx++;
         }
@@ -289,7 +299,9 @@ void REVFX_PARAM(uint8_t index, int32_t value)
         }
         if (wait_thd_cross == WAIT_THD_CROSS_ACTIVE)
         {
-            alt_drums = !alt_drums;
+            alt_drums++;
+            if (alt_drums == 3)
+                alt_drums = 0;
             set_drum_waveforms();
         }
         pattern = new_p;
@@ -338,5 +350,12 @@ void REVFX_PARAM(uint8_t index, int32_t value)
             looper_mode = LOOPER_REC;
         else if (looper_mode == LOOPER_REC)
             looper_mode = LOOPER_PLAY;
+        if (wait_thd_cross == WAIT_THD_CROSS_ACTIVE)
+        {
+            looper_mix_mode = !looper_mix_mode;
+            blip_counter = looper_mix_mode ? SHORT_BLIP_LENGTH : BLIP_MUTE_MASK * 3;
+            blip_polarity_mask = BLIP_POLARITY_MASK_HI;
+            wait_thd_cross = WAIT_THD_CROSS_IDLE;
+        }
     }
 }

@@ -2,7 +2,7 @@
 A drum machine intended for practice helper. Similar but higher quality
 than modfx-drums (reverb effects have more resources to spend).
 Uses the 8-bit/16kHz samples for kick, snare, closed hihat and rimshot.
-Has two kits: acoustic kit and electric kit.
+Has three kits: acoustic kit, electronic kit and lo-fi glitch kit.
 The drum patterns are based on a 16-step sequencer that also has per-step
 modifiers (accent, altered decay, altered pitch, sample playback offset)
 that make the drums sound a bit less static.
@@ -35,8 +35,10 @@ to the drum beat. The recorded audio is in 16-bit / 48 kHz format.
     still doesn't start (e.g. the sequence keeps running during the whole
     procedure), you can recover from this by doing a stop/start and
     then retry the arming.
-    If you twist the TIME knob while in paused in input trigger monitoring mode,
+    If you twist the SHIFT + DEPTH knob while paused in input trigger monitoring mode,
     it will switch the used drum kit.
+    If you twist the TIME know while paused in input trigger monitoring mode,
+    it will switch between loop replace/overdup modes.
 - SHIFT + DEPTH parameter selects the pattern and controls the looper. Pattern
   change is indicated by playing back a short beep sound, and a lower beep
   sound is used for 2-bar patterns. Patterns:

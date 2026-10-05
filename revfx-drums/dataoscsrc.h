@@ -18,6 +18,11 @@ struct waveform_data get_alt_kick_waveform();
 struct waveform_data get_alt_snare_waveform();
 struct waveform_data get_alt_rim_waveform();
 struct waveform_data get_alt_hat_waveform();
+// Alternative drum kit 2
+struct waveform_data get_min_kick_waveform();
+struct waveform_data get_min_snare_waveform();
+struct waveform_data get_min_rim_waveform();
+struct waveform_data get_min_hat_waveform();
 
 // Waveform indices
 
