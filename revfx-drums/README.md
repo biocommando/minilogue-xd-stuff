@@ -17,7 +17,8 @@ to the drum beat. The recorded audio is in 16-bit / 48 kHz format.
 - TIME parameter controls the looper playback volume
   * When volume is set to 0, the looper will start recording. When volume
     is set to non-zero, the looper is played back. The loop time will be
-    the length of the drum pattern, so either 1 or 2 bars.
+    always 2 bars. When in record mode, a low beep will indicate the start
+    of the loop.
 - DEPTH parameter controls the mix volume.
   * Setting depth to zero will reset the sequence so it can be used as a
     start/stop control. It also mutes the looper.
@@ -36,9 +37,11 @@ to the drum beat. The recorded audio is in 16-bit / 48 kHz format.
     procedure), you can recover from this by doing a stop/start and
     then retry the arming.
     If you twist the SHIFT + DEPTH knob while paused in input trigger monitoring mode,
-    it will switch the used drum kit.
+    it will switch the used drum kit. Use clockwise/counter-clockwise twist for different kits.
     If you twist the TIME know while paused in input trigger monitoring mode,
     it will switch between loop replace/overdup modes.
+    If TIME parameter is 0 when entering input trigger monitoring mode, the looper
+    will record only once and then enter play mode.
 - SHIFT + DEPTH parameter selects the pattern and controls the looper. Pattern
   change is indicated by playing back a short beep sound, and a lower beep
   sound is used for 2-bar patterns. Patterns:

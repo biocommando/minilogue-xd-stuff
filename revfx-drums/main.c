@@ -96,6 +96,7 @@ static uint16_t seq_sample, step_len;
 static volatile uint16_t tempo;
 static uint8_t seq_pos;
 static uint16_t step_len_error, step_len_error_acc;
+static uint8_t looper_reset_counter, looper_reset_counter_max, looper_auto_play_after_rec;
 
 static inline void set_step_length(uint32_t _tempo)
 {
@@ -164,14 +165,22 @@ void REVFX_INIT(uint32_t platform, uint32_t api)
 #define SHORT_DECAY_INIT_VAL 0.9997f
 #define ALT_PITCH_RATIO 0.7f
 
+static void restart_sequence()
+{
+    seq_sample = step_len - 1;
+    seq_pos = N_STEPS - 1;
+    looper_idx = 0;
+    looper_reset_counter_max = pattern[STEP_DIV_IDX] / 2;
+    looper_reset_counter = looper_reset_counter_max - 1;
+}
+
 void REVFX_PROCESS(float *x, uint32_t frames)
 {
     const uint32_t new_tempo = fx_get_bpm();
     if (new_tempo != tempo)
     {
         set_step_length(new_tempo);
-        seq_sample = step_len - 1;
-        seq_pos = N_STEPS - 1;
+        restart_sequence();
     }
 
     for (uint32_t i = 0; i < frames; i++)
@@ -186,6 +195,7 @@ void REVFX_PROCESS(float *x, uint32_t frames)
                 if (abs_input > seq_trig_thd)
                 {
                     wait_thd_cross = WAIT_THD_CROSS_IDLE;
+                    restart_sequence();
                 }
                 x[i * 2] = input0;
                 x[i * 2 + 1] = input1;
@@ -213,7 +223,21 @@ void REVFX_PROCESS(float *x, uint32_t frames)
             {
                 seq_pos = 0;
                 // reset looper rec/playback on first beat
-                looper_idx = 0;
+                if (++looper_reset_counter >= looper_reset_counter_max)
+                {
+                    looper_idx = 0;
+                    looper_reset_counter = 0;
+                    if (looper_mode == LOOPER_REC)
+                    {
+                        blip_counter = SHORT_BLIP_LENGTH;
+                        blip_polarity_mask = 0x80;
+                        if (looper_auto_play_after_rec && looper_auto_play_after_rec++ == 2)
+                        {
+                            looper_auto_play_after_rec = 0;
+                            looper_mode = LOOPER_PLAY;
+                        }
+                    }
+                }
             }
             const uint8_t triggers = pattern[seq_pos];
             uint8_t phase_offset = 16;
@@ -285,6 +309,7 @@ void REVFX_PROCESS(float *x, uint32_t frames)
 
 void REVFX_PARAM(uint8_t index, int32_t value)
 {
+    static int32_t prev_value;
     const float v = q31_to_f32(value);
     if (index == k_user_revfx_param_shift_depth)
     {
@@ -299,9 +324,8 @@ void REVFX_PARAM(uint8_t index, int32_t value)
         }
         if (wait_thd_cross == WAIT_THD_CROSS_ACTIVE)
         {
-            alt_drums++;
-            if (alt_drums == 3)
-                alt_drums = 0;
+            const int8_t inc = prev_value > value ? -1 : 1;
+            alt_drums = (3 + alt_drums + inc) % 3;
             set_drum_waveforms();
         }
         pattern = new_p;
@@ -319,6 +343,8 @@ void REVFX_PARAM(uint8_t index, int32_t value)
                 wait_thd_cross = WAIT_THD_CROSS_ACTIVE;
                 blip_counter = 0;
                 seq_trig_thd *= 2;
+                if (looper_mode == LOOPER_REC)
+                    looper_auto_play_after_rec = 1;
             }
         }
         else if (!halt_status && new_halt_status) // Depth x -> 0
@@ -345,6 +371,7 @@ void REVFX_PARAM(uint8_t index, int32_t value)
     }
     else if (index == k_user_revfx_param_time)
     {
+        looper_auto_play_after_rec = 0;
         looper_vol = 2 * v;
         if (v < 0.001f)
             looper_mode = LOOPER_REC;
@@ -358,4 +385,5 @@ void REVFX_PARAM(uint8_t index, int32_t value)
             wait_thd_cross = WAIT_THD_CROSS_IDLE;
         }
     }
+    prev_value = value;
 }
