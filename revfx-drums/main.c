@@ -6,7 +6,7 @@ static float gain, vol, env, osc_inc;
 static const uint8_t *pattern;
 #define SHORT_BLIP_LENGTH 3000 // 62.5 ms
 #define BLIP_POLARITY_MASK_HI 0x20 // 750 Hz
-#define BLIP_POLARITY_MASK_LO 0x40 // 325 Hz
+#define BLIP_POLARITY_MASK_LO 0x80 //162.5 Hz
 #define BLIP_MUTE_MASK 0x1000 // 85.33 ms
 #define BLIP_AMPLITUDE 0.2f
 static uint16_t blip_counter;
@@ -18,8 +18,7 @@ enum WaitThdCrossState {
     WAIT_THD_CROSS_ACTIVE
 };
 static enum WaitThdCrossState wait_thd_cross;
-static uint8_t halt_counter, halt_status;
-static uint16_t halt_timeout_counter;
+static uint8_t halt_status;
 static float seq_trig_thd;
 
 #ifdef MODFX_DRUMS_DEBUG
@@ -40,10 +39,10 @@ static float seq_trig_thd;
 static uint8_t patterns[N_PATTERNS][N_STEPS + 1] = {
     {8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 8, 0, 2}, // non-accented metronome
     {21, 4, 22, 4, 21, 5, 22, 20, 21, 4, 22, 4, 21, 38, 54, 22, 2}, // rock 1
-    {5, 52, 6, 52, 5, 1, 6, 52, 5, 20, 6, 20, 36, 1, 38, 70, 2}, // rock 2
+    {29, 1, 68, 9, 22, 1, 12, 1, 21, 0, 45, 1, 22, 1, 44, 1, 4}, // rolling
     {5, 4, 20, 4, 6, 4, 20, 9, 68, 69, 118, 68, 4, 9, 54, 36, 2}, // slow beat
     {17, 4, 19, 4, 17, 4, 19, 4, 17, 4, 19, 4, 17, 4, 19, 21, 2}, // 4 on the floor
-    {65, 20, 3, 20, 1, 20,  3, 20, 65, 20, 3, 20, 1, 20, 3, 53, 2}, // pop 2
+    {21, 8, 0, 2, 21, 0, 2, 0, 29, 0, 0, 10, 21, 0, 10, 0, 4}, // pop 2
     {113, 40, 0, 136, 113, 0, 136, 0, 115, 0, 136, 0, 113, 136, 0, 136, 4}, // pop 1
     {21, 1, 4, 40, 22, 72, 5, 24, 4, 8, 5, 88, 22, 40, 22, 88, 4}, // funky rock
     {21, 100, 20, 100, 22, 100, 21, 100, 20, 100, 21, 100, 54, 52, 54, 54, 4}, // pitch var hh beat
@@ -53,7 +52,7 @@ static uint8_t patterns[N_PATTERNS][N_STEPS + 1] = {
     {21, 36, 44, 36, 22, 36, 13, 36, 20, 36, 13, 36, 22, 36, 44, 38, 4}, // rocky hihats
     {21, 0, 5, 0, 22, 0, 4, 34, 4, 130, 5, 1, 22, 0, 4, 170, 4}, // amen
     {101, 4, 101, 4, 22, 4, 4, 38, 4, 134, 101, 38, 22, 101, 4, 134, 4}, // funky
-    {30, 0, 8, 0, 8, 0, 8, 0, 28, 0, 8, 0, 8, 0, 8, 0, 2}, // metronome
+    {21, 0, 4, 33, 22, 0, 4, 2, 4, 2, 4, 33, 22, 0, 6, 34, 4}, // hit or miss
 };
 
 // Sample playback
@@ -90,7 +89,6 @@ enum LooperMode {
 };
 static enum LooperMode looper_mode;
 static float looper_vol;
-static uint8_t looper_mix_mode;
 
 static uint16_t seq_sample, step_len;
 static volatile uint16_t tempo;
@@ -187,6 +185,7 @@ void REVFX_PROCESS(float *x, uint32_t frames)
     {
         const float input0 = x[i * 2];
         const float input1 = x[i * 2 + 1];
+        const float blip_out = blip();
         if (wait_thd_cross != WAIT_THD_CROSS_IDLE)
         {
             const float abs_input = fabsf(input0);
@@ -197,9 +196,6 @@ void REVFX_PROCESS(float *x, uint32_t frames)
                     wait_thd_cross = WAIT_THD_CROSS_IDLE;
                     restart_sequence();
                 }
-                x[i * 2] = input0;
-                x[i * 2 + 1] = input1;
-                continue;
             }
             if (wait_thd_cross == WAIT_THD_CROSS_ARMED)
             {
@@ -210,6 +206,9 @@ void REVFX_PROCESS(float *x, uint32_t frames)
                 if (abs_input > seq_trig_thd)
                     seq_trig_thd = abs_input;
             }
+            x[i * 2] = input0 + blip_out;
+            x[i * 2 + 1] = input1 + blip_out;
+            continue;
         }
         if (++seq_sample >= step_len)
         {
@@ -229,12 +228,15 @@ void REVFX_PROCESS(float *x, uint32_t frames)
                     looper_reset_counter = 0;
                     if (looper_mode == LOOPER_REC)
                     {
-                        blip_counter = SHORT_BLIP_LENGTH;
-                        blip_polarity_mask = 0x80;
                         if (looper_auto_play_after_rec && looper_auto_play_after_rec++ == 2)
                         {
                             looper_auto_play_after_rec = 0;
                             looper_mode = LOOPER_PLAY;
+                        }
+                        else
+                        {
+                            blip_counter = SHORT_BLIP_LENGTH;
+                            blip_polarity_mask = BLIP_POLARITY_MASK_LO;
                         }
                     }
                 }
@@ -270,7 +272,7 @@ void REVFX_PROCESS(float *x, uint32_t frames)
         }
         output0 *= 1 / 127.0f;
         output0 *= vol;
-        output0 += blip();
+        output0 += blip_out;
         vol *= env;
         float output1 = output0;
         if (looper_idx < LOOPER_LEN)
@@ -286,18 +288,14 @@ void REVFX_PROCESS(float *x, uint32_t frames)
             else if (looper_mode == LOOPER_REC)
             {
                 // Leave one bit for headroom
-                looper[looper_idx * 2] = (looper_mix_mode ? l0 : 0) + 16384 * input0;
-                looper[looper_idx * 2 + 1] = (looper_mix_mode ? l1 : 0) + 16384 * input1;
+                looper[looper_idx * 2] = 16384 * input0;
+                looper[looper_idx * 2 + 1] = 16384 * input1;
             }
             looper_idx++;
         }
         x[i * 2] = output0 + input0;
         x[i * 2 + 1] = output1 + input1;
     }
-    if (halt_timeout_counter > frames)
-        halt_timeout_counter -= frames;
-    else
-        halt_counter = halt_timeout_counter = 0;
 }
 
 // This will delegate the sequence restart to the processing
@@ -309,7 +307,7 @@ void REVFX_PROCESS(float *x, uint32_t frames)
 
 void REVFX_PARAM(uint8_t index, int32_t value)
 {
-    static int32_t prev_value;
+    static uint8_t drum_kit_changed;
     const float v = q31_to_f32(value);
     if (index == k_user_revfx_param_shift_depth)
     {
@@ -319,15 +317,19 @@ void REVFX_PARAM(uint8_t index, int32_t value)
         {
             DELEGATE_SEQUENCE_RESTART_TO_MODFX_PROCESS;
             blip_counter = SHORT_BLIP_LENGTH;
-            blip_polarity_mask = new_p[STEP_DIV_IDX] == 4 ?
-                BLIP_POLARITY_MASK_HI : BLIP_POLARITY_MASK_LO;
+            blip_polarity_mask = BLIP_POLARITY_MASK_HI;
         }
-        if (wait_thd_cross == WAIT_THD_CROSS_ACTIVE)
+        if (v >= 0.999f)
         {
-            const int8_t inc = prev_value > value ? -1 : 1;
-            alt_drums = (3 + alt_drums + inc) % 3;
-            set_drum_waveforms();
+            if (!drum_kit_changed)
+            {
+                alt_drums = (alt_drums + 1) % 3;
+                set_drum_waveforms();
+            }
+            drum_kit_changed = 1;
         }
+        else
+            drum_kit_changed = 0;
         pattern = new_p;
         seq_trig_thd = 0;
         wait_thd_cross = WAIT_THD_CROSS_IDLE;
@@ -349,20 +351,10 @@ void REVFX_PARAM(uint8_t index, int32_t value)
         }
         else if (!halt_status && new_halt_status) // Depth x -> 0
         {
-            if (halt_timeout_counter == 0 || wait_thd_cross != WAIT_THD_CROSS_IDLE)
+            if (wait_thd_cross != WAIT_THD_CROSS_ARMED)
             {
-                halt_timeout_counter = 48000;
-                halt_counter = 0;
-                wait_thd_cross = WAIT_THD_CROSS_IDLE;
-            }
-            halt_counter++;
-            if (halt_counter == 2)
-            {
-                halt_counter = 0;
-                halt_timeout_counter = 0;
                 wait_thd_cross = WAIT_THD_CROSS_ARMED;
-                // 0:beep, 1:rest, 2:beep, 3:rest, 4:beep
-                blip_counter = BLIP_MUTE_MASK * 5;
+                blip_counter = SHORT_BLIP_LENGTH;
                 blip_polarity_mask = BLIP_POLARITY_MASK_HI;
             }
         }
@@ -377,13 +369,5 @@ void REVFX_PARAM(uint8_t index, int32_t value)
             looper_mode = LOOPER_REC;
         else if (looper_mode == LOOPER_REC)
             looper_mode = LOOPER_PLAY;
-        if (wait_thd_cross == WAIT_THD_CROSS_ACTIVE)
-        {
-            looper_mix_mode = !looper_mix_mode;
-            blip_counter = looper_mix_mode ? SHORT_BLIP_LENGTH : BLIP_MUTE_MASK * 3;
-            blip_polarity_mask = BLIP_POLARITY_MASK_HI;
-            wait_thd_cross = WAIT_THD_CROSS_IDLE;
-        }
     }
-    prev_value = value;
 }
