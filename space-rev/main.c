@@ -6,21 +6,22 @@
 
 static __sdram float delay_buf[DEL_BUF_SZ * NDELS * 2];
 
-struct allpass_state {
-  float *mem;
-  float gain;
-  int mem_idx, mem_len;
+struct allpass_state
+{
+    float *mem;
+    float gain;
+    int mem_idx, mem_len;
 };
 
 float calculate_allpass_state(float input, struct allpass_state *s)
 {
-  float a = -s->gain * input;
-  float b = s->mem[s->mem_idx];
-  float out = a + b;
-  s->mem[s->mem_idx] = input + s->gain * out;
-  if (++s->mem_idx >= s->mem_len)
-	s->mem_idx = 0;
-  return out;
+    float a = -s->gain * input;
+    float b = s->mem[s->mem_idx];
+    float out = a + b;
+    s->mem[s->mem_idx] = input + s->gain * out;
+    if (++s->mem_idx >= s->mem_len)
+        s->mem_idx = 0;
+    return out;
 }
 
 static const int mem_lens[NDELS] = {
@@ -32,8 +33,8 @@ static float dry_mix, wet_mix;
 
 void REVFX_INIT(uint32_t platform, uint32_t api)
 {
-    (void)platform;
-    (void)api;
+    (void) platform;
+    (void) api;
     unsigned offset = 0;
     for (int i = 0; i < NDELS; i++)
     {
@@ -49,8 +50,8 @@ void REVFX_PROCESS(float *x, uint32_t frames)
 {
     for (uint32_t i = 0; i < frames; i++)
     {
-		for (int c = 0; c < 2; c++)
-		{
+        for (int c = 0; c < 2; c++)
+        {
             float input = x[i * 2 + c];
             float rv_output = 0;
             for (size_t j = 0; j < NPARALLEL; j++)
@@ -64,7 +65,7 @@ void REVFX_PROCESS(float *x, uint32_t frames)
                 rv_output = calculate_allpass_state(rv_output, &as[c][j]);
             }
             x[i * 2 + c] = input * dry_mix + rv_output * wet_mix;
-		}
+        }
     }
 }
 
