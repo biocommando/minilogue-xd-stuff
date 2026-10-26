@@ -33,8 +33,6 @@ void MODFX_INIT(uint32_t platform, uint32_t api)
 
 void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, float *sub_yn, uint32_t frames)
 {
-    static uint32_t sr_conv_cnt;
-    static float output;
     (void) sub_xn;
     (void) sub_yn;
 
@@ -48,7 +46,7 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
         input = fast_tanh(input * gain1);
         if (input > inv || input < -inv) input *= -1;
         input = fast_tanh_capped(input * gain2);
-        output = input;
+        float output = input;
 
         if (amp_onoff)
         {
