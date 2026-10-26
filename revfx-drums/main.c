@@ -98,9 +98,10 @@ static uint8_t looper_reset_counter, looper_reset_counter_max, looper_auto_play_
 
 static inline void set_step_length(uint32_t _tempo)
 {
-  step_len_error = (48000 * 600 / pattern[STEP_DIV_IDX]) % _tempo;
+  const uint32_t L = 48000 * 600 / pattern[STEP_DIV_IDX];
+  step_len_error = L % _tempo;
   step_len_error_acc = 0;
-  step_len = 48000 * 600 / _tempo / pattern[STEP_DIV_IDX];
+  step_len = L / _tempo;
   tempo = _tempo;
 }
 
@@ -140,16 +141,29 @@ static void set_drum_waveforms()
     
 }
 
+#define COMPRESSOR_RELEASE 0.9996f
+#define COMPRESSOR_THRESHOLD 0.3f
+#define COMPRESSOR_MAKEUP 1.5f
+static float compressor_env;
+
+static float compressor(float input)
+{
+    float ax = fabsf(input);
+    compressor_env *= COMPRESSOR_RELEASE;
+    if (ax > compressor_env) compressor_env = ax;
+    float e = compressor_env > COMPRESSOR_THRESHOLD ? compressor_env : COMPRESSOR_THRESHOLD;
+    return input * COMPRESSOR_MAKEUP / (e + COMPRESSOR_THRESHOLD);
+}
+
 void REVFX_INIT(uint32_t platform, uint32_t api)
 {
     (void) platform;
     (void) api;
-    for (uint32_t i = 0; i < 4; i++)
-    {
-        osc[i].mix = 1;
-    }
-    set_drum_waveforms();
+    osc[WAVEFORM_ID_bd].mix = 1;
+    osc[WAVEFORM_ID_sd].mix = 1;
+    osc[WAVEFORM_ID_rim].mix = 1;
     osc[WAVEFORM_ID_hhc].mix = 0.333f;
+    set_drum_waveforms();
 }
 
 #define TRIG_MASK_BD 1
@@ -253,7 +267,7 @@ void REVFX_PROCESS(float *x, uint32_t frames)
                 osc[WAVEFORM_ID_hhc].phase = osc[WAVEFORM_ID_hhc].wfd.length >> phase_offset;
             if (triggers & TRIG_MASK_RIM)
                 osc[WAVEFORM_ID_rim].phase = osc[WAVEFORM_ID_rim].wfd.length >> phase_offset;
-            vol = gain * 0.5;
+            vol = gain * 0.003937f; // .5 / 127
             if (triggers & TRIG_MASK_ACCENT)
                 vol *= 2;
             env = 1;
@@ -270,8 +284,8 @@ void REVFX_PROCESS(float *x, uint32_t frames)
         {
             output0 += data_osc_process(&osc[i], osc_inc);
         }
-        output0 *= 1 / 127.0f;
         output0 *= vol;
+        output0 = compressor(output0);
         output0 += blip_out;
         vol *= env;
         float output1 = output0;
