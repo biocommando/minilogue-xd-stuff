@@ -137,6 +137,72 @@
             border: solid black 3px;
             padding: 12px;
         }
+
+        #dropZone {
+            border: 2px dashed #48484a;
+            border-radius: 6px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            color: #bcbcc2;
+            margin-bottom: 1.5rem;
+        }
+
+        #dropZone.dragover {
+            border-color: #5e5ce6;
+            background-color: #323236;
+        }
+
+        #wavOptions label {
+            display: inline-block;
+            margin: 0 1.5rem 1rem 0;
+        }
+
+        #wavOptions input {
+            width: 120px;
+        }
+
+        #fileInfo {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 6px;
+            border: 1px solid #3d3d42;
+            border-left: 4px solid #48484a;
+            background-color: #323236;
+            color: #8e8e93;
+        }
+
+        #fileInfo.loaded {
+            border-left-color: #34c759;
+            color: #d1d1d6;
+        }
+
+        #fileInfo.error {
+            border-left-color: #ff453a;
+            color: #ff6961;
+        }
+
+        #fileInfo .fileName {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        #fileInfo dl {
+            display: grid;
+            grid-template-columns: max-content auto;
+            gap: 0.25rem 1.5rem;
+            margin: 0;
+        }
+
+        #fileInfo dt {
+            color: #8e8e93;
+        }
+
+        #fileInfo dd {
+            margin: 0;
+        }
     </style>
     <title>Sampler editor</title>
 </head>
@@ -171,13 +237,31 @@
             <option value="14">15</option>
             <option value="15">16</option>
         </select>
-		<br />
-		Load JSON file: <input id="jsonfile">
+        <h1>Sample</h1>
+        <div id="dropZone">Drop a .wav file here, or click to choose a file</div>
+        <input type="file" id="fileInput" accept=".wav" style="display: none;">
+        <div id="wavOptions">
+            <label>Bits
+                <select id="bitsSelect">
+                    <option value="8">8</option>
+                    <option value="16">16</option>
+                </select>
+            </label>
+            <label title="Note name (e.g. C4, F#3) or frequency in Hz. Leave empty to not send.">Base frequency
+                <input id="baseFreqInput" placeholder="e.g. C4 or 261.6">
+            </label>
+            <label>Loop index
+                <input id="loopIdxInput" value="30000">
+            </label>
+        </div>
+        <div id="fileInfo">No file loaded</div>
         <hr />
         <button onclick="sendSequence()">Send to device</button>
+        <span id="sendProgress"></span>
     </div>
 
     <script src="midi.js"></script>
+    <script src="wav2json.js"></script>
 
     <script>
         const devices = new MidiDeviceList()
@@ -187,30 +271,127 @@
                 devices.getOutputs().map(x => `<option value="${x.id}">${x.name}</option>`).join('')
             inputDeviceSelect.innerHTML =
                 devices.getInputs().map(x => `<option value="${x.id}">${x.name}</option>`).join('')
+            const defaultOutput = devices.getOutputs().find(x => x.name === 'minilogue xd 1 SOUND')
+            if (defaultOutput)
+                outputDeviceSelect.value = defaultOutput.id
         }
         let outputDevice
         function runMidiSetup() {
             outputDevice = devices.getDevice('output', outputDeviceSelect.value)
             inputDevice = devices.getDevice('input', inputDeviceSelect.value)
-            inputDevice.onNoteOn = (channel, note, velocity) => record('on', note)
-            inputDevice.onNoteOff = (channel, note) => record('off', note)
+            /*inputDevice.onNoteOn = (channel, note, velocity) => record('on', note)
+            inputDevice.onNoteOff = (channel, note) => record('off', note)*/
             midiSetupDiv.style.display = 'none'
             editorDiv.style.display = ''
         }
-        async function sendSequence() {
+        let loadedFile = null // { name, buffer }
+        let sequence = null
+
+        function parseFreq(text) {
+            text = text.trim()
+            if (!text)
+                return 0
+            if (/^[A-G][#b]?-?\d*$/.test(text))
+                return noteToFrequency(text)
+            const hz = Number(text)
+            if (isNaN(hz))
+                throw 'invalid base frequency: ' + text
+            return hz
+        }
+
+        function updateSequence() {
+            sequence = null
+            if (!loadedFile)
+                return
+            try {
+                const freq = parseFreq(baseFreqInput.value)
+                const loopIdx = parseInt(loopIdxInput.value, 10)
+                if (isNaN(loopIdx) || loopIdx < 0 || loopIdx > 0xFFFF)
+                    throw 'invalid loop index'
+                const { seq, info } = wavToSequence(loadedFile.buffer, {
+                    bits: Number(bitsSelect.value), freq, loopIdx
+                })
+                sequence = seq
+                showFileInfo('loaded', '✔ ' + loadedFile.name, [
+                    ['Format', `${info.sampleRate} Hz, ${info.bitDepth} bit, ${info.channels} ch` +
+                        (info.channels > 1 ? ' (using first channel)' : '')],
+                    ['Length', `${info.numFrames} frames (${(info.numFrames / info.sampleRate).toFixed(2)} s)` +
+                        (info.usedFrames < info.numFrames ? `, truncated to ${info.usedFrames} frames` : '')],
+                    ['Base frequency', freq ? `${freq.toFixed(2)} Hz` : 'not sent'],
+                    ['Loop index', loopIdx],
+                    ['Sequence', `${seq.length} CC messages`],
+                ])
+            } catch (e) {
+                showFileInfo('error', `${loadedFile.name}: ${e}`)
+            }
+        }
+
+        function showFileInfo(state, title, rows = []) {
+            fileInfo.className = state
+            fileInfo.innerHTML = ''
+            const titleDiv = document.createElement('div')
+            titleDiv.className = 'fileName'
+            titleDiv.textContent = title
+            const dl = document.createElement('dl')
+            for (const [key, value] of rows) {
+                const dt = document.createElement('dt')
+                dt.textContent = key
+                const dd = document.createElement('dd')
+                dd.textContent = value
+                dl.append(dt, dd)
+            }
+            fileInfo.append(titleDiv, dl)
+        }
+
+        async function loadFile(file) {
+            const buffer = await file.arrayBuffer()
+            loadedFile = { name: file.name, buffer }
+            let name = file.name.replace(/\.wav$/i, '')
+            // Pick up the loop index from file names like "pad loop=1234 C4.wav"
+            const loop = name.match(/loop=(\d+)/i)
+            loopIdxInput.value = loop ? loop[1] : DATA_LEN
+            name = name.replace(/[\s_-]*loop=\d+/i, '')
+            // Base frequency from file names like "bass freq_hz=55.wav" or a note
+            // from file names like "clarinet-f4.wav" or "rock organ C5.wav"
+            const hz = name.match(/freq_hz=(\d+(?:\.\d+)?)/i)
+            name = name.replace(/[\s_-]*freq_hz=\d+(?:\.\d+)?/i, '')
+            const m = name.match(/(?:^|[\s_-])([A-Ga-g][#b]?\d)(?:_\d+)?$/)
+            baseFreqInput.value = hz ? hz[1] : m ? m[1][0].toUpperCase() + m[1].slice(1) : ''
+            updateSequence()
+        }
+
+        dropZone.onclick = () => fileInput.click()
+        fileInput.onchange = () => fileInput.files[0] && loadFile(fileInput.files[0])
+        dropZone.ondragover = e => {
+            e.preventDefault()
+            dropZone.classList.add('dragover')
+        }
+        dropZone.ondragleave = () => dropZone.classList.remove('dragover')
+        dropZone.ondrop = e => {
+            e.preventDefault()
+            dropZone.classList.remove('dragover')
+            const file = e.dataTransfer.files[0]
+            if (file)
+                loadFile(file).catch(x => showFileInfo('error', 'Error: ' + x))
+        }
+        // Don't let the browser open files dropped outside the drop zone
+        window.ondragover = window.ondrop = e => e.preventDefault()
+        for (const el of [bitsSelect, baseFreqInput, loopIdxInput])
+            el.oninput = updateSequence
+
+        function sendSequence() {
+            if (!sequence)
+                return alert('No file loaded')
             const sshapeCc = 104;
             const channel = Number(document.getElementById('midi-channel').value)
-            fetch('/' + jsonfile.value)
-				.then(x => x.json()).then(seq => {
-					console.log('sending events', seq.length)
-					for (let i = 0; i < seq.length; i++) {
-						outputDevice.cc(sshapeCc, seq[i], channel)
-						if (i % 1000 == 0)
-							console.log('sent ', i)
-					}
-
-					alert('sequence sent')		
-			}).catch(x => alert('Error opening JSON file. ' + x))
+            sendProgress.innerText = 'Sending...'
+            setTimeout(() => {
+                for (let i = 0; i < sequence.length; i++) {
+                    outputDevice.cc(sshapeCc, sequence[i], channel)
+                }
+                alert('sent')
+                sendProgress.innerText = ''
+            }, 0)
         }
         init()
     </script>

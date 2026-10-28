@@ -1,9 +1,10 @@
 # Sampler oscillator
 This is an oscillator that can play back a custom 8/16-bit sample.
 The sample data is sent using a custom protocol via the shift-shape parameter
-that is MIDI controllable. There's an HTML based data uploader
-and also a program for transforming wav files into JSON format that can be
-sent using the uploader.
+that is MIDI controllable. There's an HTML based data uploader (index.html)
+where you can drop a wav file to convert and send it (the conversion is done
+by wav2json.js). wav2json.c is the original command line version of the
+conversion, kept as a reference; it writes the CC sequence into out.json.
 
 ## Protocol
 - Bits 0...3: DATA

@@ -37,7 +37,7 @@ double note_to_frequency(const char *note)
         note_idx++;
     if (sharp == 'b')
         note_idx--;
-    note_idx += octave * 12;
+    note_idx += (octave + 1) * 12;
     return 440 * pow(2, (note_idx - 69.0) / 12.0);
 }
 
