@@ -2,7 +2,8 @@
 
 #include "svf.h"
 
-static float gain1, gain2, inv, gaincomp, tone;
+static float gain1, gain2, gaincomp, tone, asym;
+static float p2p_in;
 static uint8_t amp_onoff;
 
 static struct svf_state amp_svf[5];
@@ -38,13 +39,20 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
     const float *__restrict x = (const float *) main_xn;
     float *__restrict y = (float *) main_yn;
 
+    float max_in = -9e9f, min_in = 9e9f;
+    float asym_offset = p2p_in * asym;
     for (uint32_t i = 0; i < frames; i++)
     {
         float input = *x;
 
-        input = fast_tanh(input * gain1);
-        if (input > inv || input < -inv) input *= -1;
+        if (min_in > input) min_in = input;
+        if (max_in < input) max_in = input;
+
+        input += asym_offset;
+
+        input = fast_tanh_capped(input * gain1) - asym_offset;
         input = fast_tanh_capped(input * gain2);
+
         float output = input;
 
         if (amp_onoff)
@@ -66,6 +74,7 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
         *(y++) = output;
         x += 2;
     }
+    p2p_in = p2p_in * 0.9 + 0.1 * (max_in - min_in);
 }
 
 void MODFX_PARAM(uint8_t index, int32_t value)
@@ -76,8 +85,8 @@ void MODFX_PARAM(uint8_t index, int32_t value)
     {
         gain1 = 1 + 30 * v;
         gain2 = 1 + 5 * v;
-        inv = 2 - v;
-        comp1 = 0.072f * (1 + v) / fast_tanh_capped(0.072f + 3.6f * v);
+        asym = v * v * 0.5f;
+        comp1 = 0.45f /(0.43 + 3.28*v - 5.64 * v*v + 2.95 * v*v*v);
     }
     else if (index == k_user_modfx_param_depth)
     {
@@ -85,7 +94,7 @@ void MODFX_PARAM(uint8_t index, int32_t value)
         tone = v * 1.2f;
         amp_svf[3].q = 1.0f / (1 + 3 * v);
         if (amp_onoff)
-            comp2 = 1.0f / (0.863f + 1.766f * v);
+            comp2 = 1.0f / ( 0.875f + 2.3f * v );
         else
             comp2 = 1;
     }
