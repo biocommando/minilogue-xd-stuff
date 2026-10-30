@@ -162,6 +162,12 @@
             width: 120px;
         }
 
+        #sampleRateHint.clickable {
+            color: #5e5ce6;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
         #fileInfo {
             font-size: 0.9rem;
             margin-bottom: 1rem;
@@ -259,6 +265,11 @@
             <label>Loop index
                 <input id="loopIdxInput" value="30000">
             </label>
+            <label title="Resamples the loaded sample. This is destructive: reload the file to undo.">Sample rate
+                <input id="sampleRateInput">
+                <button onclick="resampleLoaded()">Resample</button>
+                <span id="sampleRateHint"></span>
+            </label>
         </div>
         <div id="fileInfo">No file loaded</div>
         <hr />
@@ -318,6 +329,12 @@
                     bits: Number(bitsSelect.value), freq, loopIdx
                 })
                 sequence = seq
+                const maxFrames = Number(bitsSelect.value) === 16 ? DATA_LEN / 2 : DATA_LEN
+                const fitSr = Math.floor(maxFrames * info.sampleRate / info.numFrames)
+                const fits = info.usedFrames >= info.numFrames
+                sampleRateHint.textContent = fits ? 'fits in memory' : `fits in memory at ≤ ${fitSr} Hz`
+                sampleRateHint.classList.toggle('clickable', !fits)
+                sampleRateHint.onclick = fits ? null : () => sampleRateInput.value = fitSr
                 showFileInfo('loaded', '✔ ' + loadedFile.name, [
                     ['Format', `${info.sampleRate} Hz, ${info.bitDepth} bit, ${info.channels} ch` +
                         (info.channels > 1 ? ' (using first channel)' : '')],
@@ -382,11 +399,60 @@
             }
         }
 
+        // Same algorithm as srconv.c: linear interpolation when upsampling,
+        // 4 cascaded one-pole lowpass filters at the target nyquist followed
+        // by sample dropping when downsampling. Returns a mono wav object.
+        function resampleWav(wav, targetSr) {
+            const ratio = targetSr / wav.sampleRate
+            const outLen = Math.trunc(ratio * wav.numFrames)
+            const inc = 1 / ratio
+            const out = new Float32Array(outLen)
+            const at = i => wav.get(Math.min(i, wav.numFrames - 1))
+            if (targetSr > wav.sampleRate) {
+                let ii = 0
+                for (let i = 0; i < outLen; i++) {
+                    const s1 = at(Math.trunc(ii)), s2 = at(Math.trunc(ii) + 1)
+                    out[i] = s1 + (s2 - s1) * (ii - Math.trunc(ii))
+                    ii += inc
+                }
+            } else {
+                const factor = 1 / (1 / (2 * Math.PI / wav.sampleRate * targetSr / 2) + 1)
+                const state = [0, 0, 0, 0]
+                const filtered = new Float32Array(wav.numFrames)
+                for (let i = 0; i < wav.numFrames; i++) {
+                    let s = wav.get(i)
+                    for (let fi = 0; fi < 4; fi++)
+                        s = state[fi] = factor * s + (1 - factor) * state[fi]
+                    filtered[i] = s
+                }
+                let ii = 0
+                for (let i = 0; i < outLen; i++) {
+                    out[i] = filtered[Math.min(Math.trunc(ii), wav.numFrames - 1)]
+                    ii += inc
+                }
+            }
+            return { ...wav, sampleRate: targetSr, channels: 1, numFrames: outLen, get: i => out[i] }
+        }
+
+        function resampleLoaded() {
+            if (!loadedFile)
+                return alert('No file loaded')
+            const targetSr = parseInt(sampleRateInput.value, 10)
+            if (isNaN(targetSr) || targetSr < 1000 || targetSr > 0xFFFF)
+                return alert('Invalid sample rate (1000 - 65535)')
+            if (targetSr === loadedFile.wav.sampleRate)
+                return
+            loadedFile.wav = resampleWav(loadedFile.wav, targetSr)
+            displayWaveform(loadedFile.wav)
+            updateSequence()
+        }
+
         async function loadFile(file) {
             const buffer = await file.arrayBuffer()
             const wav = parseWav(buffer)
             displayWaveform(wav)
             loadedFile = { name: file.name, wav }
+            sampleRateInput.value = wav.sampleRate
             let name = file.name.replace(/\.wav$/i, '')
             // Pick up the loop index from file names like "pad loop=1234 C4.wav"
             const loop = name.match(/loop=(\d+)/i)
