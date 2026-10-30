@@ -380,8 +380,6 @@
             const waveformDisplay = document.getElementById('waveformDisplay')
             const ctx = waveformDisplay.getContext('2d')
             ctx.clearRect(0, 0, waveformDisplay.width, waveformDisplay.height)
-            ctx.strokeStyle = 'black'
-            ctx.beginPath()
             const yy = []
             let _16bitLimitX, _8bitLimitX, loopIdxX
             for (let x = 0; x < waveformDisplay.width; x++) {
@@ -396,15 +394,22 @@
             }
 
             const scale = 1 / Math.max(Math.abs(Math.min(...yy)), Math.abs(Math.max(...yy)))
-            for (let x = 0; x < waveformDisplay.width; x++) {
-                const y = waveformDisplay.height / 2 - waveformDisplay.height / 2 * (yy[x] * scale)
-                if (x === 0)
-                    ctx.moveTo(x, y)
-                else
-                    ctx.lineTo(x, y)
+            ctx.strokeStyle = 'black'
+            // display two-sided waveform so that the aliased wave doesn't look too much
+            // like an actual waveform rather than wave shape approximation that it actually is
+            for (let sg = 1; sg > -2; sg -= 2) {
+                ctx.beginPath()
+                for (let x = 0; x < waveformDisplay.width; x++) {
+                    const y = waveformDisplay.height / 2 - waveformDisplay.height / 2 * (sg * yy[x] * scale)
+                    if (x === 0)
+                        ctx.moveTo(x, y)
+                    else
+                        ctx.lineTo(x, y)
+                }
+                ctx.stroke()
+                if (wav.numFrames <= waveformDisplay.width)
+                    break
             }
-
-            ctx.stroke()
             ctx.strokeStyle = 'yellow'
             if (_16bitLimitX) {
                 ctx.beginPath()
