@@ -203,6 +203,11 @@
         #fileInfo dd {
             margin: 0;
         }
+
+        #waveformDisplay {
+            background-color: dimgray;
+            width: 100%;
+        }
     </style>
     <title>Sampler editor</title>
 </head>
@@ -239,6 +244,7 @@
         </select>
         <h1>Sample</h1>
         <div id="dropZone">Drop a .wav file here, or click to choose a file</div>
+        <canvas width="1000px" height="100px" id="waveformDisplay"></canvas>
         <input type="file" id="fileInput" accept=".wav" style="display: none;">
         <div id="wavOptions">
             <label>Bits
@@ -308,7 +314,7 @@
                 const loopIdx = parseInt(loopIdxInput.value, 10)
                 if (isNaN(loopIdx) || loopIdx < 0 || loopIdx > 0xFFFF)
                     throw 'invalid loop index'
-                const { seq, info } = wavToSequence(loadedFile.buffer, {
+                const { seq, info } = wavToSequence(loadedFile.wav, {
                     bits: Number(bitsSelect.value), freq, loopIdx
                 })
                 sequence = seq
@@ -343,9 +349,44 @@
             fileInfo.append(titleDiv, dl)
         }
 
+        function displayWaveform(wav) {
+            const waveformDisplay = document.getElementById('waveformDisplay')
+            const ctx = waveformDisplay.getContext('2d')
+            ctx.clearRect(0, 0, waveformDisplay.width, waveformDisplay.height)
+            ctx.beginPath()
+            let _16bitLimitX, _8bitLimitX
+            for (let x = 0; x < waveformDisplay.width; x++) {
+                const i = Math.trunc(wav.numFrames * x / waveformDisplay.width)
+                const y = waveformDisplay.height / 2 - waveformDisplay.height / 2 * wav.get(i)
+                if (x === 0)
+                    ctx.moveTo(x, y)
+                else
+                    ctx.lineTo(x, y)
+                if (!_16bitLimitX && i >= 15000)
+                    _16bitLimitX = x
+                if (!_8bitLimitX && i >= 30000)
+                    _8bitLimitX = x
+            }
+            ctx.stroke()
+            if (_16bitLimitX) {
+                ctx.beginPath()
+                ctx.moveTo(_16bitLimitX, 0)
+                ctx.lineTo(_16bitLimitX, waveformDisplay.height)
+                ctx.stroke()
+            }
+            if (_8bitLimitX) {
+                ctx.beginPath()
+                ctx.moveTo(_8bitLimitX, 0)
+                ctx.lineTo(_8bitLimitX, waveformDisplay.height)
+                ctx.stroke()
+            }
+        }
+
         async function loadFile(file) {
             const buffer = await file.arrayBuffer()
-            loadedFile = { name: file.name, buffer }
+            const wav = parseWav(buffer)
+            displayWaveform(wav)
+            loadedFile = { name: file.name, wav }
             let name = file.name.replace(/\.wav$/i, '')
             // Pick up the loop index from file names like "pad loop=1234 C4.wav"
             const loop = name.match(/loop=(\d+)/i)

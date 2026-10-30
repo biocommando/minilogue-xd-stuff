@@ -87,8 +87,7 @@ function parseWav(buffer) {
 
 // Options: bits (8 or 16), freq (base frequency in Hz, 0 = not sent),
 // loopIdx (loop index). Returns { seq, info }.
-function wavToSequence(buffer, { bits = 8, freq = 0, loopIdx = DATA_LEN } = {}) {
-    const wav = parseWav(buffer)
+function wavToSequence(wav, { bits = 8, freq = 0, loopIdx = DATA_LEN } = {}) {
     const seq = []
     let seqNum = 0
     const word = (w, nBytes) => {
