@@ -264,6 +264,8 @@
             </label>
             <label>Loop index
                 <input id="loopIdxInput" value="30000">
+                <button onclick="cutAtLoopIdx()"
+                    title="Removes everything after the loop index. This is destructive: reload the file to undo.">Cut</button>
             </label>
             <label title="Resamples the loaded sample. This is destructive: reload the file to undo.">Sample rate
                 <input id="sampleRateInput">
@@ -478,6 +480,19 @@
             if (targetSr === loadedFile.wav.sampleRate)
                 return
             loadedFile.wav = resampleWav(loadedFile.wav, targetSr)
+            displayWaveform(loadedFile.wav)
+            updateSequence()
+        }
+
+        function cutAtLoopIdx() {
+            if (!loadedFile)
+                return alert('No file loaded')
+            const loopIdx = parseInt(loopIdxInput.value, 10)
+            if (isNaN(loopIdx) || loopIdx < 1)
+                return alert('Invalid loop index')
+            if (loopIdx >= loadedFile.wav.numFrames)
+                return
+            loadedFile.wav = { ...loadedFile.wav, numFrames: loopIdx }
             displayWaveform(loadedFile.wav)
             updateSequence()
         }
