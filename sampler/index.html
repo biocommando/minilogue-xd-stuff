@@ -441,7 +441,7 @@
             }
         }
 
-        // Same algorithm as srconv.c: linear interpolation when upsampling,
+        // Port of my earlier C implementation: linear interpolation when upsampling,
         // 4 cascaded one-pole lowpass filters at the target nyquist followed
         // by sample dropping when downsampling. Returns a mono wav object.
         function resampleWav(wav, targetSr) {
