@@ -366,25 +366,44 @@
             fileInfo.append(titleDiv, dl)
         }
 
+        function getMousePos(canvas, evt) {
+            var rect = canvas.getBoundingClientRect()
+            return {
+                x: Math.round(evt.clientX - rect.left) * canvas.width / rect.width,
+                y: Math.round(evt.clientY - rect.top) * canvas.height / rect.height
+            }
+        }
+
         function displayWaveform(wav) {
             const waveformDisplay = document.getElementById('waveformDisplay')
             const ctx = waveformDisplay.getContext('2d')
             ctx.clearRect(0, 0, waveformDisplay.width, waveformDisplay.height)
+            ctx.strokeStyle = 'black'
             ctx.beginPath()
-            let _16bitLimitX, _8bitLimitX
+            const yy = []
+            let _16bitLimitX, _8bitLimitX, loopIdxX
             for (let x = 0; x < waveformDisplay.width; x++) {
                 const i = Math.trunc(wav.numFrames * x / waveformDisplay.width)
-                const y = waveformDisplay.height / 2 - waveformDisplay.height / 2 * wav.get(i)
-                if (x === 0)
-                    ctx.moveTo(x, y)
-                else
-                    ctx.lineTo(x, y)
                 if (!_16bitLimitX && i >= 15000)
                     _16bitLimitX = x
                 if (!_8bitLimitX && i >= 30000)
                     _8bitLimitX = x
+                if (!loopIdxX && i >= document.getElementById('loopIdxInput').value)
+                    loopIdxX = x
+                yy.push(wav.get(i))
             }
+
+            const scale = 1 / Math.max(Math.abs(Math.min(...yy)), Math.abs(Math.max(...yy)))
+            for (let x = 0; x < waveformDisplay.width; x++) {
+                const y = waveformDisplay.height / 2 - waveformDisplay.height / 2 * (yy[x] * scale)
+                if (x === 0)
+                    ctx.moveTo(x, y)
+                else
+                    ctx.lineTo(x, y)
+            }
+
             ctx.stroke()
+            ctx.strokeStyle = 'yellow'
             if (_16bitLimitX) {
                 ctx.beginPath()
                 ctx.moveTo(_16bitLimitX, 0)
@@ -396,6 +415,22 @@
                 ctx.moveTo(_8bitLimitX, 0)
                 ctx.lineTo(_8bitLimitX, waveformDisplay.height)
                 ctx.stroke()
+            }
+            if (loopIdxX) {
+                ctx.strokeStyle = 'blue'
+                ctx.beginPath()
+                ctx.moveTo(loopIdxX, 0)
+                ctx.lineTo(loopIdxX, waveformDisplay.height)
+                ctx.stroke()
+            }
+            waveformDisplay.onclick = evt => {
+                const {x, y} = getMousePos(waveformDisplay, evt)
+                let i = Math.trunc(wav.numFrames * x / waveformDisplay.width)
+
+                for (let sign = Math.sign(wav.get(i)); sign === Math.sign(wav.get(i)) && i > 0; i--);
+                document.getElementById('loopIdxInput').value = i
+                updateSequence()
+                displayWaveform(wav)
             }
         }
 
@@ -450,7 +485,6 @@
         async function loadFile(file) {
             const buffer = await file.arrayBuffer()
             const wav = parseWav(buffer)
-            displayWaveform(wav)
             loadedFile = { name: file.name, wav }
             sampleRateInput.value = wav.sampleRate
             let name = file.name.replace(/\.wav$/i, '')
@@ -464,6 +498,7 @@
             name = name.replace(/[\s_-]*freq_hz=\d+(?:\.\d+)?/i, '')
             const m = name.match(/(?:^|[\s_-])([A-Ga-g][#b]?\d)(?:_\d+)?$/)
             baseFreqInput.value = hz ? hz[1] : m ? m[1][0].toUpperCase() + m[1].slice(1) : ''
+            displayWaveform(wav)
             updateSequence()
         }
 
