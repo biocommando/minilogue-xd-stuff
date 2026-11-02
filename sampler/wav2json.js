@@ -85,9 +85,14 @@ function parseWav(buffer) {
     return { sampleRate, channels, bitDepth, numFrames, get }
 }
 
+const MIDDLE_C_FREQ_HZ = 261.6256
+
 // Options: bits (8 or 16), freq (base frequency in Hz, 0 = not sent),
-// loopIdx (loop index). Returns { seq, info }.
-function wavToSequence(wav, { bits = 8, freq = 0, loopIdx = DATA_LEN } = {}) {
+// loopIdx (loop index), metadataOnly (skip SEG_WAVE). Returns { seq, info }.
+// With metadataOnly only the base frequency and the loop index are sent. The
+// device resets the base frequency only when SEG_WAVE starts, so it is always
+// sent then, defaulting to middle C.
+function wavToSequence(wav, { bits = 8, freq = 0, loopIdx = DATA_LEN, metadataOnly = false } = {}) {
     const seq = []
     let seqNum = 0
     const word = (w, nBytes) => {
@@ -104,28 +109,32 @@ function wavToSequence(wav, { bits = 8, freq = 0, loopIdx = DATA_LEN } = {}) {
     const reset = () => seq.push(112, 96)
 
     reset()
-    segStart(SEG_WAVE)
     const maxFrames = Math.min(wav.numFrames, bits === 16 ? DATA_LEN / 2 : DATA_LEN)
-    let maxval = 0
-    for (let i = 0; i < maxFrames; i++)
-        maxval = Math.max(maxval, Math.abs(wav.get(i)))
-    if (maxval === 0)
-        maxval = 1
-    const range = bits === 16 ? 0x7fff : 127
-    for (let i = 0; i < maxFrames; i++) {
-        let w = Math.trunc(Math.fround(Math.fround(wav.get(i) / maxval) * range))
-        if (w < 0)
-            w = range - w
-        word(w, bits === 16 ? 2 : 1)
+    if (!metadataOnly) {
+        segStart(SEG_WAVE)
+        let maxval = 0
+        for (let i = 0; i < maxFrames; i++)
+            maxval = Math.max(maxval, Math.abs(wav.get(i)))
+        if (maxval === 0)
+            maxval = 1
+        const range = bits === 16 ? 0x7fff : 127
+        for (let i = 0; i < maxFrames; i++) {
+            let w = Math.trunc(Math.fround(Math.fround(wav.get(i) / maxval) * range))
+            if (w < 0)
+                w = range - w
+            word(w, bits === 16 ? 2 : 1)
+        }
+        reset()
     }
-    reset()
 
-    if (wav.sampleRate !== 16000) {
+    if (wav.sampleRate !== 16000 && !metadataOnly) {
         segStart(SEG_SAMPLERATE)
         word(wav.sampleRate, 2)
         reset()
     }
 
+    if (metadataOnly && !freq)
+        freq = MIDDLE_C_FREQ_HZ
     if (freq) {
         segStart(SEG_BASEFREQ)
         word(Math.trunc(Math.fround(freq) * 1e6) >>> 0, 4)
@@ -136,7 +145,7 @@ function wavToSequence(wav, { bits = 8, freq = 0, loopIdx = DATA_LEN } = {}) {
     word(loopIdx, 2)
     reset()
 
-    if (bits !== 8) {
+    if (bits !== 8 && !metadataOnly) {
         segStart(SEG_BITS)
         word(bits, 1)
         reset()

@@ -276,6 +276,8 @@
         <div id="fileInfo">No file loaded</div>
         <hr />
         <button onclick="sendSequence()">Send to device</button>
+        <button onclick="sendSequence(true)"
+            title="Sends only the base frequency and loop index, keeping the sample data, sample rate and bits already on the device.">Send metadata only</button>
         <span id="sendProgress"></span>
     </div>
 
@@ -305,6 +307,7 @@
         }
         let loadedFile = null // { name, buffer }
         let sequence = null
+        let metaSequence = null
 
         function parseFreq(text) {
             text = text.trim()
@@ -319,7 +322,7 @@
         }
 
         function updateSequence() {
-            sequence = null
+            sequence = metaSequence = null
             if (!loadedFile)
                 return
             try {
@@ -327,10 +330,10 @@
                 const loopIdx = parseInt(loopIdxInput.value, 10)
                 if (isNaN(loopIdx) || loopIdx < 0 || loopIdx > 0xFFFF)
                     throw 'invalid loop index'
-                const { seq, info } = wavToSequence(loadedFile.wav, {
-                    bits: Number(bitsSelect.value), freq, loopIdx
-                })
+                const opts = { bits: Number(bitsSelect.value), freq, loopIdx }
+                const { seq, info } = wavToSequence(loadedFile.wav, opts)
                 sequence = seq
+                metaSequence = wavToSequence(loadedFile.wav, { ...opts, metadataOnly: true }).seq
                 const maxFrames = Number(bitsSelect.value) === 16 ? DATA_LEN / 2 : DATA_LEN
                 const fitSr = Math.floor(maxFrames * info.sampleRate / info.numFrames)
                 const fits = info.usedFrames >= info.numFrames
@@ -541,15 +544,16 @@
         for (const el of [bitsSelect, baseFreqInput, loopIdxInput])
             el.oninput = updateSequence
 
-        function sendSequence() {
-            if (!sequence)
+        function sendSequence(metadataOnly = false) {
+            const seq = metadataOnly ? metaSequence : sequence
+            if (!seq)
                 return alert('No file loaded')
             const sshapeCc = 104;
             const channel = Number(document.getElementById('midi-channel').value)
             sendProgress.innerText = 'Sending...'
             setTimeout(() => {
-                for (let i = 0; i < sequence.length; i++) {
-                    outputDevice.cc(sshapeCc, sequence[i], channel)
+                for (let i = 0; i < seq.length; i++) {
+                    outputDevice.cc(sshapeCc, seq[i], channel)
                 }
                 alert('sent')
                 sendProgress.innerText = ''
