@@ -129,7 +129,7 @@ static inline float data_osc_process(struct data_osc *osc)
     return out * osc->mix * curr.scaling;
 }
 
-static void handle_midi_cc(uint8_t midi_word)
+__fast_inline void handle_midi_cc(uint8_t midi_word)
 {
     /*
      * Format:
@@ -146,7 +146,39 @@ static void handle_midi_cc(uint8_t midi_word)
     static uint8_t segment, expected_seq_num;
     const uint8_t DATA = midi_word & 0xF;
     const uint8_t META = (midi_word >> 4) & 7;
-    if (META > 4)
+    if (META == expected_seq_num)
+    {
+        // Segment data
+        data_word = (data_word << 4) | DATA;
+        expected_seq_num = (expected_seq_num + 1) % 4;
+        if (segment == SEG_WAVE && META % 2 == 1 && osc.wfd.length < DATA_LEN)
+        {
+            waveform[osc.wfd.length] = data_word;
+            osc.wfd.length++;
+            data_word = 0;
+        }
+        else if (segment == SEG_SAMPLERATE && META == 3)
+        {
+            data_samplerate = data_word;
+            segment = SEG_NONE;
+        }
+        else if (segment == SEG_BASEFREQ && META == 3 && (data_word & 0xFFFF0000))
+        {
+            base_freq = data_word / 1e6f;
+            segment = SEG_NONE;
+        }
+        else if (segment == SEG_LOOPIDX && META == 3)
+        {
+            osc.loopback_idx = data_word;
+            segment = SEG_NONE;
+        }
+        else if (segment == SEG_BITS && META == 1)
+        {
+            bits = data_word;
+            segment = SEG_NONE;
+        }
+    }
+    else if (META > 4)
     {
         // Reset
         data_word = segment = expected_seq_num = 0;
@@ -162,38 +194,6 @@ static void handle_midi_cc(uint8_t midi_word)
         }
         data_word = 0;
         expected_seq_num = 0;
-    }
-    else if (META == expected_seq_num)
-    {
-        // Segment data
-        data_word = (data_word << 4) | DATA;
-        if (segment == SEG_SAMPLERATE && META == 3)
-        {
-            data_samplerate = data_word;
-            segment = SEG_NONE;
-        }
-        if (segment == SEG_BASEFREQ && META == 3 && (data_word & 0xFFFF0000))
-        {
-            base_freq = data_word / 1e6f;
-            segment = SEG_NONE;
-        }
-        if (segment == SEG_LOOPIDX && META == 3)
-        {
-            osc.loopback_idx = data_word;
-            segment = SEG_NONE;
-        }
-        if (segment == SEG_BITS && META == 1)
-        {
-            bits = data_word;
-            segment = SEG_NONE;
-        }
-        if (segment == SEG_WAVE && META % 2 == 1 && osc.wfd.length < DATA_LEN)
-        {
-            waveform[osc.wfd.length] = data_word;
-            osc.wfd.length++;
-            data_word = 0;
-        }
-        expected_seq_num = (expected_seq_num + 1) % 4;
     }
 }
 
@@ -262,6 +262,10 @@ void OSC_PARAM(uint16_t index, uint16_t value)
 {
     switch (index)
     {
+        case k_user_osc_param_shiftshape:
+            //noise_mix = param_val_to_f32(value);
+            handle_midi_cc((value >> 3) & 0x7f);
+            break;
         case USER_PARAM__Split__idx:
             user_params.split = value / 100.0f;
             break;
@@ -282,10 +286,6 @@ void OSC_PARAM(uint16_t index, uint16_t value)
             break;
         case k_user_osc_param_shape:
             user_params.flanger_mix = param_val_to_f32(value);
-            break;
-        case k_user_osc_param_shiftshape:
-            //noise_mix = param_val_to_f32(value);
-            handle_midi_cc((value >> 3) & 0x7f);
             break;
         default:
             break;
