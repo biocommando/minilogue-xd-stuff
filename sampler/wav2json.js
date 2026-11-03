@@ -151,6 +151,8 @@ function wavToSequence(wav, { bits = 8, freq = 0, loopIdx = DATA_LEN, metadataOn
         reset()
     }
 
+    seq.push(80) // transaction end -> recalculate sample length and loop index
+
     return {
         seq,
         info: {

@@ -15,15 +15,9 @@ static struct {
     uint8_t kb_track, linint, reverse, loop_mode;
 } user_params;
 
-struct waveform_data
-{
-    const uint8_t *data;
-    uint16_t length;
-};
-
 struct data_osc
 {
-    struct waveform_data wfd;
+    const uint8_t *data;
     // Sample player index
     float phase;
     // Index increment
@@ -31,6 +25,8 @@ struct data_osc
     // Position where to jump after reaching end
     float loopback_idx;
     float mix;
+    uint16_t num_frames;
+    uint8_t loop_valid;
 };
 
 static struct data_osc osc;
@@ -64,22 +60,20 @@ struct sample
 {
     int data;
     float scaling;
-    uint16_t length;
 };
 
 static inline struct sample get_wave_data(const struct data_osc *osc, uint32_t idx)
 {
     struct sample s;
-    s.length = osc->wfd.length;
+    if (idx >= osc->num_frames)
+    {
+        s.data = last_sample;
+        return s;
+    }
     if (bits == 8)
     {
         s.scaling = 1 / (float)0x7f;
-        if (idx >= s.length)
-        {
-            s.data = last_sample;
-            return s;
-        }
-        int d = osc->wfd.data[idx];
+        int d = osc->data[idx];
         if (d > 0x7f)
             d = 0x7f - d;
         s.data = d;
@@ -87,13 +81,7 @@ static inline struct sample get_wave_data(const struct data_osc *osc, uint32_t i
     else
     {
         s.scaling = 1 / (float)0x7fff;
-        s.length /= 2;
-        if (idx >= s.length)
-        {
-            s.data = last_sample;
-            return s;
-        }
-        int d = (osc->wfd.data[idx * 2] << 8) | (osc->wfd.data[idx * 2 + 1]);
+        int d = (osc->data[idx * 2] << 8) | (osc->data[idx * 2 + 1]);
         if (d > 0x7fff)
             d = 0x7fff - d;
         s.data = d;
@@ -115,15 +103,16 @@ static inline float data_osc_process(struct data_osc *osc)
     }
 
     osc->phase += osc->inc;
-    if (user_params.loop_mode != LOOP_MODE_NO_LOOP)
+    if (user_params.loop_mode == LOOP_MODE_LOOP_START ||
+        (user_params.loop_mode == LOOP_MODE_LOOP_IDX && osc->loop_valid))
     {
         const float frac = osc->phase - (int)osc->phase;
-        if (osc->phase >= curr.length)
+        if (osc->phase >= osc->num_frames)
             osc->phase = (user_params.loop_mode == LOOP_MODE_LOOP_IDX ?
                 osc->loopback_idx : 0) + frac;
         else if (osc->phase < 0)
             osc->phase = (user_params.loop_mode == LOOP_MODE_LOOP_IDX ?
-                curr.length - 1 - osc->loopback_idx : curr.length - 1) + frac;
+                osc->num_frames - 1 - osc->loopback_idx : osc->num_frames - 1) + frac;
     }
 
     return out * osc->mix * curr.scaling;
@@ -144,6 +133,7 @@ __fast_inline void handle_midi_cc(uint8_t midi_word)
     
     static uint32_t data_word;
     static uint8_t segment, expected_seq_num;
+    static uint16_t loopback_idx, waveform_length;
     const uint8_t DATA = midi_word & 0xF;
     const uint8_t META = (midi_word >> 4) & 7;
     if (META == expected_seq_num)
@@ -151,15 +141,16 @@ __fast_inline void handle_midi_cc(uint8_t midi_word)
         // Segment data
         data_word = (data_word << 4) | DATA;
         expected_seq_num = (expected_seq_num + 1) % 4;
-        if (segment == SEG_WAVE && META % 2 == 1 && osc.wfd.length < DATA_LEN)
+        if (segment == SEG_WAVE && META % 2 == 1 && waveform_length < DATA_LEN)
         {
-            waveform[osc.wfd.length] = data_word;
-            osc.wfd.length++;
+            waveform[waveform_length] = data_word;
+            waveform_length++;
             data_word = 0;
         }
         else if (segment == SEG_SAMPLERATE && META == 3)
         {
-            data_samplerate = data_word;
+            if (data_word > 0)
+                data_samplerate = data_word;
             segment = SEG_NONE;
         }
         else if (segment == SEG_BASEFREQ && META == 3 && (data_word & 0xFFFF0000))
@@ -169,12 +160,13 @@ __fast_inline void handle_midi_cc(uint8_t midi_word)
         }
         else if (segment == SEG_LOOPIDX && META == 3)
         {
-            osc.loopback_idx = data_word;
+            loopback_idx = data_word;
             segment = SEG_NONE;
         }
         else if (segment == SEG_BITS && META == 1)
         {
-            bits = data_word;
+            if (data_word == 8 || data_word == 16)
+                bits = data_word;
             segment = SEG_NONE;
         }
     }
@@ -182,14 +174,35 @@ __fast_inline void handle_midi_cc(uint8_t midi_word)
     {
         // Reset
         data_word = segment = expected_seq_num = 0;
+        if (META == 5)
+        {
+            // Transaction end
+            osc.num_frames = waveform_length;
+            if (bits == 16)
+                osc.num_frames /= 2;
+            if (osc.num_frames == 0)
+            {
+                waveform[0] = waveform[1] = 0;
+                osc.num_frames = 1;
+            }
+            if (loopback_idx >= osc.num_frames)
+                loopback_idx = osc.num_frames - 1;
+            else
+                osc.loop_valid = 1;
+            osc.loopback_idx = loopback_idx;
+        }
     }
     else if (META == 4)
     {
+        // These are supposed to be set by META=5 message after data transfer
+        osc.loopback_idx = 0;
+        osc.num_frames = 1;
+        osc.loop_valid = 0;
         // Segment start
         segment = DATA;
         if (segment == SEG_WAVE)
         {
-            osc.wfd.length = 0;
+            waveform_length = 0;
             set_sample_metadata_defaults();
         }
         data_word = 0;
@@ -201,9 +214,10 @@ void OSC_INIT(uint32_t platform, uint32_t api)
 {
     (void) platform;
     (void) api;
-    osc.wfd.data = waveform;
+    osc.data = waveform;
     osc.loopback_idx = 82;
-    osc.wfd.length = 10489;
+    osc.num_frames = 10489;
+    osc.loop_valid = 1;
     set_sample_metadata_defaults();
 }
 
@@ -238,7 +252,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
 
 void OSC_NOTEON(const user_osc_param_t *const params)
 {
-    const float len = osc.wfd.length * 8 / bits;
+    const float len = osc.num_frames;
     osc.phase = (((params->pitch) >> 8) & 3) * user_params.split * len;
 
     if (osc.loopback_idx < len)
