@@ -20,6 +20,8 @@ META:
   * SEG_BITS: bitdepth
   * SEG_WAVE: data
   * others: nothing selected
+- 5 -> end of transaction: sets the sample index metadata, making data
+  sending an atomic operation
 - others: state machine reset
 
 Data segments:
