@@ -3,8 +3,8 @@
 
 static inline uint32_t _synth_random()
 {
-    static uint32_t state = 123;
-    state = (state >> 5) ^ state;
+    static uint32_t state;
+    state = (state >> 5) ^ (state ^ 1);
     state = (state << 7) ^ state;
     return state;
 }
@@ -21,7 +21,7 @@ void OSC_CYCLE(const user_osc_param_t *const params, int32_t *yn, const uint32_t
 
     OSC_LOOP(y, yn, frames)
     {
-        phase = phase + inc;
+        phase += inc;
 
         if (_synth_random() < phase_reset_thd)
             phase = 0;

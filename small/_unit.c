@@ -75,12 +75,12 @@ static const user_osc_hook_table_t s_hook_table = {
   .api = USER_API_VERSION,
   .platform = USER_TARGET_PLATFORM>>8,
   .reserved0 = {0},
-  .func_entry = _hook_init,
+  .func_entry = _entry,
   .func_cycle = _hook_cycle,
   .func_on = _hook_on,
   .func_off = _hook_on,
   .func_mute = _hook_on,
-  .func_value = _hook_value,
+  .func_value = (void(*)(uint16_t))_hook_on,
   .func_param = _hook_param,
   .reserved1 = {0}
 };
@@ -97,8 +97,8 @@ static const user_osc_hook_table_t s_hook_table = {
  */
 
 
-__attribute__((weak))
-void _hook_init(uint32_t platform, uint32_t api)
+__attribute__((used))
+void _entry(uint32_t platform, uint32_t api)
 {
   (void)platform;
   (void)api;
@@ -118,11 +118,11 @@ void _hook_on(const user_osc_param_t * const params)
   (void)params;
 }
 
-__attribute__((weak))
+/*__attribute__((weak))
 void _hook_value(uint16_t value)
 {
   (void)value;
-}
+}*/
 
 /*__attribute__((weak))
 void _hook_param(uint16_t index, uint16_t value)
