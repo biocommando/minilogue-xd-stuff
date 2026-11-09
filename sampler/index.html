@@ -277,7 +277,8 @@
         <hr />
         <button onclick="sendSequence()">Send to device</button>
         <button onclick="sendSequence(true)"
-            title="Sends only the base frequency and loop index, keeping the sample data, sample rate and bits already on the device.">Send metadata only</button>
+            title="Sends only the base frequency and loop index, keeping the sample data, sample rate and bits already on the device.">Send
+            metadata only</button>
         <span id="sendProgress"></span>
     </div>
 
@@ -434,7 +435,7 @@
                 ctx.stroke()
             }
             waveformDisplay.onclick = evt => {
-                const {x, y} = getMousePos(waveformDisplay, evt)
+                const { x, y } = getMousePos(waveformDisplay, evt)
                 let i = Math.trunc(wav.numFrames * x / waveformDisplay.width)
 
                 for (let sign = Math.sign(wav.get(i)); sign === Math.sign(wav.get(i)) && i > 0; i--);
@@ -472,7 +473,9 @@
                 }
                 let ii = 0
                 for (let i = 0; i < outLen; i++) {
-                    out[i] = filtered[Math.min(Math.trunc(ii), wav.numFrames - 1)]
+                    const s1 = filtered[Math.min(Math.trunc(ii), wav.numFrames - 1)]
+                    const s2 = filtered[Math.min(Math.trunc(ii + 1), wav.numFrames - 1)]
+                    out[i] = s1 + (s2 - s1) * (ii - Math.trunc(ii))
                     ii += inc
                 }
             }
