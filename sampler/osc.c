@@ -254,6 +254,8 @@ void OSC_NOTEON(const user_osc_param_t *const params)
 {
     const float len = osc.num_frames;
     osc.phase = (((params->pitch) >> 8) & 3) * user_params.split * len;
+    if (osc.phase >= len)
+        osc.phase = ((int)osc.phase) % osc.num_frames;
 
     if (osc.loopback_idx < len)
     {
