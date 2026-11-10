@@ -85,6 +85,56 @@ function parseWav(buffer) {
     return { sampleRate, channels, bitDepth, numFrames, get }
 }
 
+function concatWavs(wav1, wav2) {
+    const data = []
+    for (let i = 0; i < wav1.numFrames; i++) {
+        data.push(wav1.get(i))
+    }
+    if (wav1.sampleRate !== wav2.sampleRate)
+        wav2 = resampleWav(wav2, wav1.sampleRate)
+    for (let i = 0; i < wav2.numFrames; i++) {
+        data.push(wav2.get(i))
+    }
+    return {...wav1, numFrames: wav1.numFrames + wav2.numFrames, get: i => data[i]}
+}
+
+// Port of my earlier C implementation: linear interpolation when upsampling,
+// 4 cascaded one-pole lowpass filters at the target nyquist followed
+// by sample dropping when downsampling. Returns a mono wav object.
+function resampleWav(wav, targetSr) {
+    const ratio = targetSr / wav.sampleRate
+    const outLen = Math.trunc(ratio * wav.numFrames)
+    const inc = 1 / ratio
+    const out = new Float32Array(outLen)
+    const at = i => wav.get(Math.min(i, wav.numFrames - 1))
+    if (targetSr > wav.sampleRate) {
+        let ii = 0
+        for (let i = 0; i < outLen; i++) {
+            const s1 = at(Math.trunc(ii)), s2 = at(Math.trunc(ii) + 1)
+            out[i] = s1 + (s2 - s1) * (ii - Math.trunc(ii))
+            ii += inc
+        }
+    } else {
+        const factor = 1 / (1 / (2 * Math.PI / wav.sampleRate * targetSr / 2) + 1)
+        const state = [0, 0, 0, 0]
+        const filtered = new Float32Array(wav.numFrames)
+        for (let i = 0; i < wav.numFrames; i++) {
+            let s = wav.get(i)
+            for (let fi = 0; fi < 4; fi++)
+                s = state[fi] = factor * s + (1 - factor) * state[fi]
+            filtered[i] = s
+        }
+        let ii = 0
+        for (let i = 0; i < outLen; i++) {
+            const s1 = filtered[Math.min(Math.trunc(ii), wav.numFrames - 1)]
+            const s2 = filtered[Math.min(Math.trunc(ii + 1), wav.numFrames - 1)]
+            out[i] = s1 + (s2 - s1) * (ii - Math.trunc(ii))
+            ii += inc
+        }
+    }
+    return { ...wav, sampleRate: targetSr, channels: 1, numFrames: outLen, get: i => out[i] }
+}
+
 const MIDDLE_C_FREQ_HZ = 261.6256
 
 // Options: bits (8 or 16), freq (base frequency in Hz, 0 = not sent),

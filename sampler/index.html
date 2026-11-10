@@ -252,6 +252,9 @@
         <div id="dropZone">Drop a .wav file here, or click to choose a file</div>
         <canvas width="1000px" height="100px" id="waveformDisplay"></canvas>
         <input type="file" id="fileInput" accept=".wav" style="display: none;">
+        <label>Append mode
+            <input type="checkbox" id="appendModeCheckbox">
+        </label>
         <div id="wavOptions">
             <label>Bits
                 <select id="bitsSelect">
@@ -263,7 +266,7 @@
                 <input id="baseFreqInput" placeholder="e.g. C4 or 261.6">
             </label>
             <label>Loop index
-                <input id="loopIdxInput" value="30000">
+                <input id="loopIdxInput" value="30000" onchange="displayWaveform(loadedFile.wav)">
                 <button onclick="cutAtLoopIdx()"
                     title="Removes everything after the loop index. This is destructive: reload the file to undo.">Cut</button>
             </label>
@@ -445,43 +448,6 @@
             }
         }
 
-        // Port of my earlier C implementation: linear interpolation when upsampling,
-        // 4 cascaded one-pole lowpass filters at the target nyquist followed
-        // by sample dropping when downsampling. Returns a mono wav object.
-        function resampleWav(wav, targetSr) {
-            const ratio = targetSr / wav.sampleRate
-            const outLen = Math.trunc(ratio * wav.numFrames)
-            const inc = 1 / ratio
-            const out = new Float32Array(outLen)
-            const at = i => wav.get(Math.min(i, wav.numFrames - 1))
-            if (targetSr > wav.sampleRate) {
-                let ii = 0
-                for (let i = 0; i < outLen; i++) {
-                    const s1 = at(Math.trunc(ii)), s2 = at(Math.trunc(ii) + 1)
-                    out[i] = s1 + (s2 - s1) * (ii - Math.trunc(ii))
-                    ii += inc
-                }
-            } else {
-                const factor = 1 / (1 / (2 * Math.PI / wav.sampleRate * targetSr / 2) + 1)
-                const state = [0, 0, 0, 0]
-                const filtered = new Float32Array(wav.numFrames)
-                for (let i = 0; i < wav.numFrames; i++) {
-                    let s = wav.get(i)
-                    for (let fi = 0; fi < 4; fi++)
-                        s = state[fi] = factor * s + (1 - factor) * state[fi]
-                    filtered[i] = s
-                }
-                let ii = 0
-                for (let i = 0; i < outLen; i++) {
-                    const s1 = filtered[Math.min(Math.trunc(ii), wav.numFrames - 1)]
-                    const s2 = filtered[Math.min(Math.trunc(ii + 1), wav.numFrames - 1)]
-                    out[i] = s1 + (s2 - s1) * (ii - Math.trunc(ii))
-                    ii += inc
-                }
-            }
-            return { ...wav, sampleRate: targetSr, channels: 1, numFrames: outLen, get: i => out[i] }
-        }
-
         function resampleLoaded() {
             if (!loadedFile)
                 return alert('No file loaded')
@@ -508,7 +474,7 @@
             updateSequence()
         }
 
-        async function loadFile(file) {
+        async function loadFileReplace(file) {
             const buffer = await file.arrayBuffer()
             const wav = parseWav(buffer)
             loadedFile = { name: file.name, wav }
@@ -526,6 +492,24 @@
             baseFreqInput.value = hz ? hz[1] : m ? m[1][0].toUpperCase() + m[1].slice(1) : ''
             displayWaveform(wav)
             updateSequence()
+        }
+
+        async function loadFileAppend(file) {
+            const buffer = await file.arrayBuffer()
+            let wav = parseWav(buffer)
+            wav = concatWavs(loadedFile.wav, wav)
+            loadedFile = { name: loadedFile.name + ' & ' + file.name, wav }
+            sampleRateInput.value = wav.sampleRate
+            displayWaveform(wav)
+            updateSequence()
+        }
+
+        async function loadFile(file) {
+            if (!loadedFile || !appendModeCheckbox.checked) {
+                await loadFileReplace(file)
+            } else {
+                await loadFileAppend(file)
+            }
         }
 
         dropZone.onclick = () => fileInput.click()
