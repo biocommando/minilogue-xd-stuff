@@ -4,11 +4,11 @@
 
 PROJECT = clip
 
-UCSRC = main.c
+UCSRC = main.c ../common/src/svf.c
 
 UCXXSRC =
 
-UINCDIR = 
+UINCDIR = ../common/src
 
 UDEFS =
 
