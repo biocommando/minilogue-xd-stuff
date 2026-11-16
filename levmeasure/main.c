@@ -28,7 +28,7 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn, const float *sub_xn, fl
         }
         phase += freq;
         phase -= (int)phase;
-        s = fastsinfullf(2 * M_PI * phase) * outlevel;
+        s = sinf(2 * M_PI * phase) * outlevel;
         
         *(y++) = s;
         *(y++) = s;
