@@ -11,14 +11,18 @@ The beat is synced to tempo. The playback features start/stop/trigger on
 input via knob macros.
 
 In addition to the drum machine, the effect contains a looper that
-allows recording 2 bar audio loop that is synchronized
-to the drum beat. The recorded audio is in 16-bit / 48 kHz format.
+allows recording an audio loop that is synchronized
+to the drum beat. There are 3 variants with different looper quality
+settings. The quality setting affects the loop length:
+- drum-loop-16b: 16-bit / 48 kHz, loop time 2 bars
+- drum-loop-12b: 12-bit / 48 kHz, loop time 4 bars
+- drum-loop-8b:   8-bit / 36 kHz, loop time 8 bars
 
 - TIME parameter controls the looper playback volume
   * When volume is set to 0, the looper will start recording. When volume
     is set to non-zero, the looper is played back. The loop time will be
-    always 2 bars. When in record mode, a low beep will indicate the start
-    of the loop.
+    always the same (depends on variant). When in record mode, a low
+    beep will indicate the start of the loop.
 - DEPTH parameter controls the drum mix volume.
   * Setting depth to zero will arm the input trigger monitoring.
     When depth is set to non-zero after this, playing

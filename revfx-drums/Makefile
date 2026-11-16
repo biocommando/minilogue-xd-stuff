@@ -149,6 +149,11 @@ all: PRE_ALL $(OBJS) $(OUTFILES) POST_ALL
 	@echo Done
 	@echo
 
+prepare:
+	sed -i 's/"name": "[^"]*"/"name": "drum-loop-$(VARIANT)b"/' manifest.json
+	sed -i "s/PROJECT.*/PROJECT = drum-loop-$(VARIANT)b/" project.mk
+	sed -i "s/#define.*/#define LOOPER_$(VARIANT)BIT/" bitdepth.h
+
 PRE_ALL:
 
 POST_ALL:

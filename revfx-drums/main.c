@@ -1,5 +1,7 @@
 #include "userrevfx.h"
 #include "dataoscsrc.h"
+#include "12bit.h"
+#include "bitdepth.h"
 #include <math.h>
 
 static float gain, vol, env, osc_inc;
@@ -81,9 +83,25 @@ static inline float data_osc_process(struct data_osc *osc, float inc)
 static struct data_osc osc[4];
 static uint8_t alt_drums;
 
+#ifdef LOOPER_12BIT
+
+#define LOOPER_LEN 830080
+#define STEP_DIV_TO_LOOPER_BARS(s) s
+static __sdram uint8_t looper[LOOPER_LEN * 3];
+static uint32_t looper_idx;
+#else
+#ifdef LOOPER_8BIT
+#define STEP_DIV_TO_LOOPER_BARS(s) (s) * 2
+#define LOOPER_LEN 1245184
+static __sdram uint8_t looper[LOOPER_LEN * 2];
+static float looper_idx;
+#else
 #define LOOPER_LEN 0x80000
+#define STEP_DIV_TO_LOOPER_BARS(s) (s) / 2
 static __sdram int16_t looper[LOOPER_LEN * 2];
 static uint32_t looper_idx;
+#endif
+#endif
 enum LooperMode {
     LOOPER_IDLE, LOOPER_PLAY, LOOPER_REC
 };
@@ -182,7 +200,7 @@ static void restart_sequence()
     seq_sample = step_len - 1;
     seq_pos = N_STEPS - 1;
     looper_idx = 0;
-    looper_reset_counter_max = pattern[STEP_DIV_IDX] / 2;
+    looper_reset_counter_max = STEP_DIV_TO_LOOPER_BARS(pattern[STEP_DIV_IDX]);
     looper_reset_counter = looper_reset_counter_max - 1;
 }
 
@@ -291,10 +309,46 @@ void REVFX_PROCESS(float *x, uint32_t frames)
         float output1 = output0;
         if (looper_idx < LOOPER_LEN)
         {
-            const int16_t l0 = looper[looper_idx * 2];
-            const int16_t l1 = looper[looper_idx * 2 + 1];
+            #ifdef LOOPER_12BIT
+            int16_t l_stereo_samples[2];
             if (looper_mode == LOOPER_PLAY && !halt_status)
             {
+                get2_from_12bit_buf(l_stereo_samples, looper_idx, looper);
+                const float f = looper_vol / 0x7ff;
+                output0 += to_signed_12bitval(l_stereo_samples[0]) * f;
+                output1 += to_signed_12bitval(l_stereo_samples[1]) * f;
+            }
+            else if (looper_mode == LOOPER_REC)
+            {
+                // Not leaving headroom because of the lower bit depth
+                l_stereo_samples[0] = 0x7ff * input0;
+                l_stereo_samples[1] = 0x7ff * input1;
+                set2_to_12bit_buf(l_stereo_samples, looper_idx, looper);
+            }
+            looper_idx++;
+            #else
+            #ifdef LOOPER_8BIT
+            const uint32_t idx = ((uint32_t)(looper_idx)) * 2;
+            if (looper_mode == LOOPER_PLAY && !halt_status)
+            {
+                const int8_t l0 = looper[idx];
+                const int8_t l1 = looper[idx + 1];
+                const float f = looper_vol / 127.0f;
+                output0 += l0 * f;
+                output1 += l1 * f;
+            }
+            else if (looper_mode == LOOPER_REC)
+            {
+                // Not leaving headroom because of the lower bit depth
+                looper[idx] = 127 * input0;
+                looper[idx + 1] = 127 * input1;
+            }
+            looper_idx += 0.75f;
+            #else
+            if (looper_mode == LOOPER_PLAY && !halt_status)
+            {
+                const int16_t l0 = looper[looper_idx * 2];
+                const int16_t l1 = looper[looper_idx * 2 + 1];
                 const float f = looper_vol / 16384.0f;
                 output0 += l0 * f;
                 output1 += l1 * f;
@@ -306,6 +360,8 @@ void REVFX_PROCESS(float *x, uint32_t frames)
                 looper[looper_idx * 2 + 1] = 16384 * input1;
             }
             looper_idx++;
+            #endif
+            #endif
         }
         x[i * 2] = output0 + input0;
         x[i * 2 + 1] = output1 + input1;
