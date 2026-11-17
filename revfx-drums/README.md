@@ -37,6 +37,10 @@ settings. The quality setting affects the loop length:
     procedure), you can recover from this by retrying the arming.
     If TIME parameter is 0 when entering input trigger monitoring mode (from armed state), the looper
     will record only once and then enter play mode.
+    If you set TIME parameter to maximum value while the input trigger monitoring is armed,
+    it will double the looper recording time. Note that with lower tempos this might
+    mean that the loop is cut prematurely. For 16 bit variant the limit is 74.5 bpm and for others
+    111.5 bpm.
 - SHIFT + DEPTH parameter selects the pattern. Pattern change is indicated by playing back a short
   beep sound. If you set the knob to the maximum value, it will change the used drum kit.
   Patterns:

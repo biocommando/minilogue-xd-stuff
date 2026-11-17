@@ -85,7 +85,7 @@ static uint8_t alt_drums;
 
 #ifdef LOOPER_12BIT
 
-#define LOOPER_LEN 830080
+#define LOOPER_LEN 830122
 #define STEP_DIV_TO_LOOPER_BARS(s) s
 static __sdram uint8_t looper[LOOPER_LEN * 3];
 static uint32_t looper_idx;
@@ -96,7 +96,7 @@ static uint32_t looper_idx;
 static __sdram uint8_t looper[LOOPER_LEN * 2];
 static float looper_idx;
 #else
-#define LOOPER_LEN 0x80000
+#define LOOPER_LEN 622592
 #define STEP_DIV_TO_LOOPER_BARS(s) (s) / 2
 static __sdram int16_t looper[LOOPER_LEN * 2];
 static uint32_t looper_idx;
@@ -113,6 +113,7 @@ static volatile uint16_t tempo;
 static uint8_t seq_pos;
 static uint16_t step_len_error, step_len_error_acc;
 static uint8_t looper_reset_counter, looper_reset_counter_max, looper_auto_play_after_rec;
+static uint8_t looper_length_multiplier = 1, looper_length_multiplier_upd;
 
 static inline void set_step_length(uint32_t _tempo)
 {
@@ -200,7 +201,7 @@ static void restart_sequence()
     seq_sample = step_len - 1;
     seq_pos = N_STEPS - 1;
     looper_idx = 0;
-    looper_reset_counter_max = STEP_DIV_TO_LOOPER_BARS(pattern[STEP_DIV_IDX]);
+    looper_reset_counter_max = STEP_DIV_TO_LOOPER_BARS(pattern[STEP_DIV_IDX]) * looper_length_multiplier;
     looper_reset_counter = looper_reset_counter_max - 1;
 }
 
@@ -439,5 +440,17 @@ void REVFX_PARAM(uint8_t index, int32_t value)
             looper_mode = LOOPER_REC;
         else if (looper_mode == LOOPER_REC)
             looper_mode = LOOPER_PLAY;
+        if (halt_status && v >= 0.999f)
+        {
+            if (!looper_length_multiplier_upd)
+            {
+                looper_length_multiplier = looper_length_multiplier == 1 ? 2 : 1;
+                blip_counter = BLIP_MUTE_MASK * (looper_length_multiplier + 1);
+                blip_polarity_mask = BLIP_POLARITY_MASK_HI;
+                looper_length_multiplier_upd = 1;
+            }
+        }
+        else
+            looper_length_multiplier_upd = 0;
     }
 }
