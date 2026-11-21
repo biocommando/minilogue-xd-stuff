@@ -430,12 +430,20 @@ void REVFX_PARAM(uint8_t index, int32_t value)
             }
         }
         halt_status = new_halt_status;
-        gain = v;
+        // full range 0-1, with a small dead zone near zero to make it
+        // possible to mute without entering input monitoring mode
+        gain = 1.0526f * (v - 0.05f);
+        if (gain < 0)
+            gain = 0;
     }
     else if (index == k_user_revfx_param_time)
     {
         looper_auto_play_after_rec = 0;
-        looper_vol = 2 * v;
+        // full range 0-2, with a small dead zone near zero to make it
+        // possible to mute without entering record mode
+        looper_vol = 2.105f * (v - 0.05f);
+        if (looper_vol < 0)
+            looper_vol = 0;
         if (v < 0.001f)
             looper_mode = LOOPER_REC;
         else if (looper_mode == LOOPER_REC)
